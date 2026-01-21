@@ -1,0 +1,20 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="aiohttp" />
+          <option value="beautifulsoup4" />
+          <option value="chardet" />
+          <option value="pygame" />
+          <option value="python-dotenv" />
+          <option value="Requests" />
+          <option value="spacy" />
+          <option value="sqlcipher3" />
+          <option value="tabulate" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>

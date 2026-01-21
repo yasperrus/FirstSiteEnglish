@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h2>{{ word_list.name }}</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Слово</th>
+            <th>Транскрипция</th>
+            <th>Часть речи</th>
+            <th>Перевод</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for word in word_list.words.all %}
+<tr class="word-card">
+    <td>{{ word.name }}</td>
+    <td>{{ word.transcription }}</td>
+
+    <td>
+        <select class="part-select form-select">
+            {% for part in word.parts_of_speech.all %}
+                <option value="{{ part.id }}"
+                        {% if part.is_main %}selected{% endif %}>
+                    {{ part.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </td>
+
+    <td>
+        <select class="translation-select form-select"></select>
+
+        {# СКРЫТЫЕ переводы #}
+        {% for part in word.parts_of_speech.all %}
+            <div class="translations-data"
+                 data-part-id="{{ part.id }}"
+                 style="display:none;">
+                {% for tr in part.translations.all %}
+                    <span data-id="{{ tr.id }}"
+                          data-is-main="{{ tr.is_main|yesno:'1,0' }}">
+                        {{ tr.translation }}
+                    </span>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </td>
+</tr>
+
+{% endfor %}
+
+    </tbody>
+</table>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'lists/js/words.js' %}"></script>
+
+{% endblock %}

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Добавление списка субтитров</h2>
+
+    <form id="subtitle-form" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="subtitle-file" class="form-label">Файл субтитров:</label>
+            <input type="file" class="form-control" id="subtitle-file" name="subtitle_file" required onchange="autoPreview()">
+        </div>
+
+        <div class="mb-3">
+            <label for="subtitle-name" class="form-label">Название списка:</label>
+            <input type="text" class="form-control" id="subtitle-name" name="subtitle_name" placeholder="Введите название" required>
+        </div>
+    </form>
+
+    <div id="words-section" class="mt-4" style="display:none;">
+        <button type="button" class="btn btn-primary mb-2" id="save-btn-top">Сохранить список</button>
+        <button type="button" class="btn btn-outline-danger ms-2 mb-2" id="clear-btn">Очистить список</button>
+        <span class="badge bg-secondary fs-6" id="words-count">Слов: 0</span>
+        <div id="words-table" class="table-responsive"></div>
+
+        <button type="button" class="btn btn-primary mt-2" id="save-btn-bottom">Сохранить список</button>
+    </div>
+
+
+</div>
+
+<script>
+    function updateWordsCount() {
+        const rows = document.querySelectorAll('.word-row');
+        document.getElementById('words-count').textContent = `Слов: ${rows.length}`;
+    }
+    document.getElementById("clear-btn").onclick = function () {
+        // очистить файл
+        const fileInput = document.getElementById("subtitle-file");
+        fileInput.value = "";
+
+        // очистить название
+        document.getElementById("subtitle-name").value = "";
+
+        // очистить таблицу
+        document.getElementById("words-table").innerHTML = "";
+
+        // скрыть блок предпросмотра
+        document.getElementById("words-section").style.display = "none";
+        updateWordsCount();
+
+    };
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+async function autoPreview() {
+    const fileInput = document.getElementById("subtitle-file");
+    if (!fileInput.files[0]) return;
+
+    const formData = new FormData();
+    formData.append("subtitle_file", fileInput.files[0]);
+    const csrftoken = getCookie('csrftoken');
+
+    try {
+        const res = await fetch("{% url 'subtitle_preview' %}", {
+            method: "POST",
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        });
+        const data = await res.json();
+
+        document.getElementById("subtitle-name").value = data.subtitle_name;
+
+        // Рендер таблицы слов через Bootstrap
+        const tableDiv = document.getElementById("words-table");
+        tableDiv.innerHTML = `
+            <table class="table table-striped table-hover table-bordered align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Слово</th>
+                        <th>Транскрипция</th>
+                        <th>Часть речи</th>
+                        <th>Перевод</th>
+                        <th>Частотность</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.words.map((w, idx) => `
+                        <tr data-index="${idx}" class="word-row">
+                            <td>${w.name}</td>
+                            <td>${w.transcription || ''}</td>
+                            <td>
+                                <select class="form-select pos-select">
+                                    ${w.pos_list.map(pos => `<option value="${pos}" ${pos===w.selected_pos?'selected':''}>${pos}</option>`).join('')}
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-select translation-select">
+                                    ${(w.translations_for_pos[w.selected_pos] || []).map(tr => `<option value="${tr}" ${tr===w.selected_translation?'selected':''}>${tr}</option>`).join('')}
+                                </select>
+                            </td>
+                            <td>${w.frequency}</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-danger delete-word">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        document.querySelectorAll(".delete-word").forEach(btn => {
+            btn.addEventListener("click", function () {
+                const row = this.closest("tr");
+                row.remove();
+                updateWordsCount();
+                // если слов больше нет — скрываем предпросмотр
+                const rowsLeft = document.querySelectorAll("#words-table tbody tr");
+                if (rowsLeft.length === 0) {
+                    document.getElementById("words-section").style.display = "none";
+                    document.getElementById("subtitle-name").value = "";
+                    document.getElementById("subtitle-file").value = "";
+                }
+            });
+        });
+
+
+        document.getElementById("words-section").style.display = "block";
+        updateWordsCount();
+
+        // Динамическое обновление переводов при смене части речи
+        document.querySelectorAll('.pos-select').forEach((select, idx) => {
+            select.addEventListener('change', function() {
+                const trSelect = document.querySelectorAll('.translation-select')[idx];
+                const translations = data.words[idx].translations_for_pos[this.value] || [];
+                trSelect.innerHTML = translations.map(t => `<option value="${t}">${t}</option>`).join('');
+            });
+        });
+
+        // Обработчик кнопок "Сохранить"
+        async function saveList() {
+            const rows = document.querySelectorAll("#words-table tbody tr");
+            const words = [];
+            rows.forEach((row, i) => {
+                const cols = row.children;
+                words.push({
+                    name: cols[0].innerText,
+                    transcription: cols[1].innerText,
+                    selected_pos: cols[2].children[0].value,
+                    selected_translation: cols[3].children[0].value,
+                    frequency: parseInt(cols[4].innerText)
+                });
+            });
+
+            const formDataSave = new FormData();
+            formDataSave.append("subtitle_name", document.getElementById("subtitle-name").value);
+            words.forEach(w => formDataSave.append("words", JSON.stringify(w)));
+
+            const res = await fetch("{% url 'subtitle_save' %}", {
+                method: "POST",
+                body: formDataSave,
+                headers: {'X-CSRFToken': csrftoken}
+            });
+            const dataSave = await res.json();
+            if(dataSave.status === "ok") {
+                alert("Список успешно сохранён!");
+            } else {
+                alert("Ошибка при сохранении списка");
+            }
+        }
+
+        document.getElementById("save-btn-top").onclick = saveList;
+        document.getElementById("save-btn-bottom").onclick = saveList;
+
+    } catch(e) {
+        console.error("Ошибка предпросмотра:", e);
+        alert("Не удалось сделать предпросмотр");
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+сейчас все у меня так
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h2>{{ subtitle_list.title }}</h2>
+
+<div class="card-container">
+  <div class="flashcard" id="card">
+    <div class="card-face front">
+      <h2 id="word"></h2>
+      <small id="transcription"></small>
+    </div>
+    <div class="card-face back">
+      <h3 id="translation"></h3>
+    </div>
+  </div>
+</div>
+
+<input
+  type="text"
+  id="answer"
+  class="form-control mt-3"
+  placeholder="Введите перевод">
+
+<div class="controls mt-3">
+    <button class="btn nav-btn" id="prev">
+        <img src="{% static 'lists/icons/left-arrow.png' %}" alt="prev">
+    </button>
+    <button class="btn btn-success nav-btn" id="check">
+        <img src="{% static 'lists/icons/check-mark.png' %}" alt="check">
+    </button>
+    <button class="btn nav-btn" id="next">
+        <img src="{% static 'lists/icons/right-arrow.png' %}" alt="next">
+    </button>
+</div>
+
+<script>
+  const WORDS = {{ words_json|safe }};
+</script>
+
+<script src="{% static 'lists/js/flashcards.js' %}"></script>
+<link rel="stylesheet" href="{% static 'lists/css/flashcards.css' %}">
+{% endblock %}
+
+
+.card-container {
+  perspective: 1000px;
+  margin: 40px auto;
+  width: 320px;
+}
+
+.flashcard {
+  height: 180px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+  cursor: pointer;
+}
+
+.flashcard.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(0,0,0,.15);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.back {
+  transform: rotateY(180deg);
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+#answer {
+  max-width: 320px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.nav-btn img {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  transition: transform .2s, background .2s;
+}
+
+.nav-btn:hover {
+  transform: translateY(-2px);
+  background: #f6f6f6;
+}
+
+.nav-btn:active {
+  transform: translateY(0);
+}
+
+
+нужно сделать чтоб карточка располагалась по центру экрана
+при нажатии Enter когда курсор в поле ввода срабатывала проверка перевода
+ниже карточки была информация позиция карточки в списке +1 чтоб не было 0 и рядом количество слов, например 5/20
+и сама карточка должна быть чуть больше чем сейчас и слова крупнее в карточке
