@@ -1,128 +1,222 @@
-сейчас все у меня так
+у меня есть такой шаблон где отображаются пользователям опубликованные списки
+я хочу чтоб при нажати на лайк у всех пользователей без перезагрузки отображалась
+новое количество лайков
+техлонологию для этого хочу использовать redis
+
+вот шаблон word_lists.html
 {% extends "base.html" %}
 {% load static %}
 
 {% block content %}
-<h2>{{ subtitle_list.title }}</h2>
+<div class="container mt-4">
 
-<div class="card-container">
-  <div class="flashcard" id="card">
-    <div class="card-face front">
-      <h2 id="word"></h2>
-      <small id="transcription"></small>
+    <div class="row g-4">
+        {% for list in word_lists %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm list-card {% if list.is_public %}border-success{% endif %}">
+
+                <div class="card-body d-flex flex-column">
+
+                    <!-- Заголовок: название + лайки -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+
+                        <!-- Название -->
+                        <h5 class="card-title mb-0">
+                            {{ list.pk }} {{ list.name }}
+                        </h5>
+
+                        <!-- Лайки -->
+                        <div class="text-center">
+                            <button
+                                class="btn btn-link p-0 like-btn"
+                                data-list-id="{{ list.id }}"
+                                {% if not list.is_public %}disabled{% endif %}
+                            >
+                                <i class="bi
+                                   {% if list.is_liked %}
+                                       bi-heart-fill text-danger
+                                   {% else %}
+                                       bi-heart
+                                   {% endif %}
+                                   fs-5">
+                                </i>
+                            </button>
+
+                            <div class="small text-muted likes-count">
+                                {{ list.likes.count }}
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <!-- Слов / Опубликовать -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+
+                        <!-- Количество слов -->
+                        <span class="text-muted small">
+                            Слов: {{ list.quantity_words }}
+                        </span>
+
+                        <!-- Switch публикации -->
+                        {% if request.user == list.owner or request.user.is_staff %}
+                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                                <label class="form-check-label small text-muted mb-0">
+                                    Опубликовать
+                                </label>
+                                <input
+                                    class="form-check-input publish-switch m-0"
+                                    type="checkbox"
+                                    role="switch"
+                                    data-list-id="{{ list.id }}"
+                                    {% if list.is_public %}checked{% endif %}
+                                >
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+                    <!-- Низ карточки -->
+                    <div class="mt-auto d-flex justify-content-between align-items-center">
+
+                        <!-- Открыть -->
+                        <a href="{% url 'word_list_detail' list.id %}"
+                           class="btn btn-primary btn-sm">
+                            Открыть
+                        </a>
+
+                        <!-- Действия -->
+                        {% if request.user == list.owner %}
+                            <div class="btn-group">
+                                <button
+                                    class="btn btn-light btn-sm icon-btn delete-list"
+                                    data-list-id="{{ list.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+
+                                <button class="btn btn-light btn-sm icon-btn">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        {% empty %}
+            <p class="text-muted">Списков пока нет</p>
+        {% endfor %}
     </div>
-    <div class="card-face back">
-      <h3 id="translation"></h3>
-    </div>
-  </div>
 </div>
-
-<input
-  type="text"
-  id="answer"
-  class="form-control mt-3"
-  placeholder="Введите перевод">
-
-<div class="controls mt-3">
-    <button class="btn nav-btn" id="prev">
-        <img src="{% static 'lists/icons/left-arrow.png' %}" alt="prev">
-    </button>
-    <button class="btn btn-success nav-btn" id="check">
-        <img src="{% static 'lists/icons/check-mark.png' %}" alt="check">
-    </button>
-    <button class="btn nav-btn" id="next">
-        <img src="{% static 'lists/icons/right-arrow.png' %}" alt="next">
-    </button>
-</div>
-
-<script>
-  const WORDS = {{ words_json|safe }};
-</script>
-
-<script src="{% static 'lists/js/flashcards.js' %}"></script>
-<link rel="stylesheet" href="{% static 'lists/css/flashcards.css' %}">
 {% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'lists/js/lists.js' %}"></script>
+{% endblock %}
 
-.card-container {
-  perspective: 1000px;
-  margin: 40px auto;
-  width: 320px;
+и lists.js
+// Получение CSRF токена из cookie
+function getCookie(name) {
+    let cookieValue = null;
+    document.cookie.split(';').forEach(c => {
+        c = c.trim();
+        if (c.startsWith(name + '=')) {
+            cookieValue = decodeURIComponent(c.substring(name.length + 1));
+        }
+    });
+    return cookieValue;
 }
 
-.flashcard {
-  height: 180px;
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.6s;
-  cursor: pointer;
-}
+document.addEventListener("DOMContentLoaded", () => {
+    const csrftoken = getCookie("csrftoken");
 
-.flashcard.flipped {
-  transform: rotateY(180deg);
-}
+    // Обработчик удаления
+    document.querySelectorAll(".delete-list").forEach(btn => {
+        btn.addEventListener("click", async function () {
+            if (!confirm("Удалить список?")) return;
 
-.card-face {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 10px 25px rgba(0,0,0,.15);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
+            const listId = this.dataset.listId;
 
-.back {
-  transform: rotateY(180deg);
-}
+            try {
+                const res = await fetch(`/list/${listId}/delete/`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": csrftoken,
+                    },
+                });
 
-.controls {
-  display: flex;
-  justify-content: space-between;
-  max-width: 320px;
-  margin: 0 auto;
-}
+                if (res.ok) {
+                    // Плавное исчезновение карточки
+                    const col = this.closest(".col-md-6");
+                    col.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+                    col.style.opacity = "0";
+                    col.style.transform = "scale(0.95)";
+                    setTimeout(() => col.remove(), 300);
+                } else {
+                    const text = await res.text();
+                    console.error("Ошибка удаления:", text);
+                    alert("Ошибка при удалении");
+                }
+            } catch(e) {
+                console.error(e);
+                alert("Ошибка при удалении");
+            }
+        });
+    });
+    const switches = document.querySelectorAll(".publish-switch");
 
-#answer {
-  max-width: 320px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
+    switches.forEach(sw => {
+        sw.addEventListener("change", function () {
+            const listId = this.dataset.listId;
 
-.nav-btn img {
-  width: 24px;
-  height: 24px;
-}
+            fetch(`/lists/${listId}/toggle-publish/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                }
+            })
+            .then(res => {
+                if (!res.ok) {
+                    this.checked = !this.checked;
+                    throw new Error("Permission denied");
+                }
+                return res.json();
+            })
+            .then(data => {
+                this.checked = data.is_public;
+            })
+            .catch(() => {
+                this.checked = !this.checked;
+            });
+        });
+    });
+    document.querySelectorAll(".like-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+            const listId = this.dataset.listId;
+            const icon = this.querySelector("i");
+            const countEl = this.parentElement.querySelector(".likes-count");
 
-.nav-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid #ddd;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  transition: transform .2s, background .2s;
-}
+            fetch(`/lists/${listId}/toggle-like/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.liked) {
+                    icon.classList.remove("bi-heart");
+                    icon.classList.add("bi-heart-fill", "text-danger");
+                } else {
+                    icon.classList.remove("bi-heart-fill", "text-danger");
+                    icon.classList.add("bi-heart");
+                }
 
-.nav-btn:hover {
-  transform: translateY(-2px);
-  background: #f6f6f6;
-}
-
-.nav-btn:active {
-  transform: translateY(0);
-}
-
-
-нужно сделать чтоб карточка располагалась по центру экрана
-при нажатии Enter когда курсор в поле ввода срабатывала проверка перевода
-ниже карточки была информация позиция карточки в списке +1 чтоб не было 0 и рядом количество слов, например 5/20
-и сама карточка должна быть чуть больше чем сейчас и слова крупнее в карточке
+                countEl.textContent = data.likes_count;
+            });
+        });
+    });
+});

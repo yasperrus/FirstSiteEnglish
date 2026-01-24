@@ -25,7 +25,10 @@ SECRET_KEY = 'django-insecure-nvnf1hg)a&ndb0=7(*n64z7hhi2#(kdb@%m@(u#j_j221o8^vg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'yaspernew.pythonanywhere.com'
+]
 
 
 # Application definition
@@ -39,12 +42,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "django.contrib.sites",
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-
-    "allauth.socialaccount.providers.google",
-    "allauth.socialaccount.providers.yandex",
 
     "lists",
     "accounts",
@@ -59,19 +56,16 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    "allauth.account.middleware.AccountMiddleware",
 ]
 
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 
 
-ALLOWED_HOSTS = ['127.0.0.1']
 ROOT_URLCONF = 'english.urls'
 
 TEMPLATES = [
@@ -150,3 +144,5 @@ ACCOUNT_EMAIL_VERIFICATION = "none"  # для старта
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000

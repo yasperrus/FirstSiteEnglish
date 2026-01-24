@@ -11,45 +11,64 @@
             <input type="file" class="form-control" id="subtitle-file" name="subtitle_file" required onchange="autoPreview()">
         </div>
 
-        <div class="mb-3">
+        <div class="mb-2">
             <label for="subtitle-name" class="form-label">Название списка:</label>
             <input type="text" class="form-control" id="subtitle-name" name="subtitle_name" placeholder="Введите название" required>
         </div>
     </form>
 
-    <div id="words-section" class="mt-4" style="display:none;">
-        <button type="button" class="btn btn-primary mb-2" id="save-btn-top">Сохранить список</button>
-        <button type="button" class="btn btn-outline-danger ms-2 mb-2" id="clear-btn">Очистить список</button>
-        <span class="badge bg-secondary fs-6" id="words-count">Слов: 0</span>
+    <div id="words-section" class="mt-4 mb-3" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <button type="button" class="btn btn-primary" id="save-btn-top">
+                    Сохранить список
+                </button>
+                <button type="button" class="btn btn-outline-danger ms-2" id="clear-btn-top">
+                    Очистить список
+                </button>
+            </div>
+
+            <span class="badge bg-secondary fs-6" id="words-count-top">
+                Слов: 0
+            </span>
+        </div>
+
         <div id="words-table" class="table-responsive"></div>
 
-        <button type="button" class="btn btn-primary mt-2" id="save-btn-bottom">Сохранить список</button>
-    </div>
+        <div class="d-flex justify-content-between align-items-center mt-1">
+            <div>
+                <button type="button" class="btn btn-primary" id="save-btn-bottom">
+                    Сохранить список
+                </button>
+                <button type="button" class="btn btn-outline-danger ms-2" id="clear-btn-bottom">
+                    Очистить список
+                </button>
+            </div>
 
+            <span class="badge bg-secondary fs-6" id="words-count-bottom">
+                Слов: 0
+            </span>
+        </div>
+
+    </div>
 
 </div>
 
 <script>
     function updateWordsCount() {
-        const rows = document.querySelectorAll('.word-row');
-        document.getElementById('words-count').textContent = `Слов: ${rows.length}`;
+        const count = document.querySelectorAll('.word-row').length;
+
+        document.getElementById('words-count-top').textContent = `Слов: ${count}`;
+        document.getElementById('words-count-bottom').textContent = `Слов: ${count}`;
     }
-    document.getElementById("clear-btn").onclick = function () {
-        // очистить файл
-        const fileInput = document.getElementById("subtitle-file");
-        fileInput.value = "";
 
-        // очистить название
+    function clearAll() {
+        document.getElementById("subtitle-file").value = "";
         document.getElementById("subtitle-name").value = "";
-
-        // очистить таблицу
         document.getElementById("words-table").innerHTML = "";
-
-        // скрыть блок предпросмотра
         document.getElementById("words-section").style.display = "none";
         updateWordsCount();
-
-    };
+    }
 
     function getCookie(name) {
         let cookieValue = null;
@@ -92,6 +111,7 @@ async function autoPreview() {
             <table class="table table-striped table-hover table-bordered align-middle">
                 <thead class="table-dark">
                     <tr>
+                        <th></th>
                         <th>Слово</th>
                         <th>Транскрипция</th>
                         <th>Часть речи</th>
@@ -103,6 +123,7 @@ async function autoPreview() {
                 <tbody>
                     ${data.words.map((w, idx) => `
                         <tr data-index="${idx}" class="word-row">
+                            <td>${idx+1}</td>
                             <td>${w.name}</td>
                             <td>${w.transcription || ''}</td>
                             <td>
@@ -126,6 +147,9 @@ async function autoPreview() {
                 </tbody>
             </table>
         `;
+
+        document.getElementById("clear-btn-top").onclick = clearAll;
+        document.getElementById("clear-btn-bottom").onclick = clearAll;
 
         document.querySelectorAll(".delete-word").forEach(btn => {
             btn.addEventListener("click", function () {
@@ -162,11 +186,11 @@ async function autoPreview() {
             rows.forEach((row, i) => {
                 const cols = row.children;
                 words.push({
-                    name: cols[0].innerText,
-                    transcription: cols[1].innerText,
-                    selected_pos: cols[2].children[0].value,
-                    selected_translation: cols[3].children[0].value,
-                    frequency: parseInt(cols[4].innerText)
+                    name: cols[1].innerText,
+                    transcription: cols[2].innerText,
+                    selected_pos: cols[3].children[0].value,
+                    selected_translation: cols[4].children[0].value,
+                    frequency: parseInt(cols[5].innerText)
                 });
             });
 

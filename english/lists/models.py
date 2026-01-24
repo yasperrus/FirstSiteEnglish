@@ -10,6 +10,14 @@ class SubtitleList(models.Model):
     is_open_menu = models.BooleanField(default=False)
     is_hide = models.BooleanField(default=False)
 
+    is_public = models.BooleanField(default=False)
+
+    owner = models.ForeignKey(  # 👈 владелец списка
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="owned_subtitle_lists",
+    )
+
     quantity_words = models.PositiveIntegerField(default=0)
     quantity_words_frequencies = models.PositiveIntegerField(default=0)
     quantity_learned_words = models.PositiveIntegerField(default=0)
@@ -32,6 +40,23 @@ class SubtitleList(models.Model):
 
     def __str__(self):
         return self.name
+
+class SubtitleListLike(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="subtitle_list_likes"
+    )
+    subtitle_list = models.ForeignKey(
+        SubtitleList,
+        on_delete=models.CASCADE,
+        related_name="likes"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "subtitle_list")
+
 
 class UserSubtitleList(models.Model):
     user = models.ForeignKey(

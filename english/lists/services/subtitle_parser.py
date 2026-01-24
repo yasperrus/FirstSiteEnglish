@@ -50,7 +50,7 @@ class ConvertTextToSubtitleWords:
 
     def _get_word_frequencies(self, text: str) -> Counter:
         words = []
-        for doc in nlp.pipe([text], batch_size=128):
+        for doc in nlp.pipe([text], batch_size=128, n_process=4):
             for token in doc:
                 if token.is_stop or token.is_punct or token.is_space:
                     continue

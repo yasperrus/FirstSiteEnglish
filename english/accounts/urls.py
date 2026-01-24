@@ -11,7 +11,6 @@ from accounts.views import (
 )
 
 urlpatterns = [
-    path("accounts/", include("allauth.urls")),
     path("login/", login_page, name="login"),
     path("login/ajax/", login_ajax, name="login_ajax"),
     path("register/ajax/", register_ajax, name="register_ajax"),

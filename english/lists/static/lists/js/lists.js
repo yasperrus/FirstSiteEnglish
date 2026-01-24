@@ -46,4 +46,57 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
+    const switches = document.querySelectorAll(".publish-switch");
+
+    switches.forEach(sw => {
+        sw.addEventListener("change", function () {
+            const listId = this.dataset.listId;
+
+            fetch(`/lists/${listId}/toggle-publish/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                }
+            })
+            .then(res => {
+                if (!res.ok) {
+                    this.checked = !this.checked;
+                    throw new Error("Permission denied");
+                }
+                return res.json();
+            })
+            .then(data => {
+                this.checked = data.is_public;
+            })
+            .catch(() => {
+                this.checked = !this.checked;
+            });
+        });
+    });
+    document.querySelectorAll(".like-btn").forEach(btn => {
+        btn.addEventListener("click", function () {
+            const listId = this.dataset.listId;
+            const icon = this.querySelector("i");
+            const countEl = this.parentElement.querySelector(".likes-count");
+
+            fetch(`/lists/${listId}/toggle-like/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.liked) {
+                    icon.classList.remove("bi-heart");
+                    icon.classList.add("bi-heart-fill", "text-danger");
+                } else {
+                    icon.classList.remove("bi-heart-fill", "text-danger");
+                    icon.classList.add("bi-heart");
+                }
+
+                countEl.textContent = data.likes_count;
+            });
+        });
+    });
 });
