@@ -73,6 +73,32 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
     });
+
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(
+        `${protocol}://${window.location.host}/ws/likes/`
+    );
+
+    socket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        const listId = data.list_id;
+        const likesCount = data.likes_count;
+
+        const btn = document.querySelector(
+            `.like-btn[data-list-id="${listId}"]`
+        );
+
+        if (btn) {
+            const countEl = btn.parentElement.querySelector(".likes-count");
+            countEl.textContent = likesCount;
+        }
+    };
+
+    socket.onclose = function () {
+        console.warn("WebSocket closed");
+    };
+
+
     document.querySelectorAll(".like-btn").forEach(btn => {
         btn.addEventListener("click", function () {
             const listId = this.dataset.listId;

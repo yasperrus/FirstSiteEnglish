@@ -5,6 +5,9 @@ from django.db import models
 # Create your models here.
 from django.db import models
 
+def subtitle_list_image_path(instance, filename):
+    return f"images/lists/{instance.owner.username}/{filename}"
+
 class SubtitleList(models.Model):
     name = models.CharField(max_length=255, blank=True, default="")
     is_open_menu = models.BooleanField(default=False)
@@ -16,6 +19,16 @@ class SubtitleList(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="owned_subtitle_lists",
+    )
+
+    background_image = models.ImageField(
+        upload_to=subtitle_list_image_path,
+        null=True,
+        blank=True,
+    )
+
+    background_color = models.CharField(
+        max_length=20, default="#ffffff", help_text="CSS цвет фона (например: #ffffff)"
     )
 
     quantity_words = models.PositiveIntegerField(default=0)
@@ -87,8 +100,26 @@ class SubtitleListWord(models.Model):
     class Meta:
         unique_together = ("subtitle_list", "word")
 
+
+class KnownWord(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="known_words"
+    )
+    word = models.ForeignKey(
+        "Word",
+        on_delete=models.CASCADE,
+        related_name="known_by_users"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "word")
+
+
 class Word(models.Model):
-    name = models.CharField(max_length=255, unique=True,null=True, blank=True)
+    name = models.CharField(max_length=255, unique=True, db_index=True,null=True, blank=True)
     transcription = models.CharField(max_length=30, blank=True, default="")
 
     def __str__(self):

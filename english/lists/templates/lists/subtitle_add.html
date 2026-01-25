@@ -1,5 +1,9 @@
 {% extends "base.html" %}
+{% load static %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'lists/css/subtitle_add.css' %}">
+{% endblock %}
 {% block content %}
 <div class="container mt-4">
     <h2 class="mb-4">Добавление списка субтитров</h2>
@@ -8,7 +12,7 @@
         {% csrf_token %}
 
         <div class="mb-4">
-            
+
             <label class="form-label fw-bold">Источник субтитров</label>
 
             <div class="row g-3" id="source-row">
@@ -41,7 +45,82 @@
             <input type="text" class="form-control" id="subtitle-name" name="subtitle_name"
                    placeholder="Мои субтитры — Friends S01" required>
         </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-bold">Оформление карточки</label>
+
+            <div class="row g-3 align-items-start">
+
+                <!-- Левая часть — изображение -->
+                <div class="col-md-6">
+                    <label class="form-label small">Фоновое изображение (необязательно)</label>
+                    <input type="file"
+                           class="form-control"
+                           id="background-image"
+                           name="background_image"
+                           accept="image/*">
+
+                    <div class="form-text">
+                        Если выбрано изображение — цвет фона игнорируется
+                    </div>
+                </div>
+
+                <!-- Правая часть — выбор цвета -->
+                <div class="col-md-6">
+                    <label class="form-label small">Цвет фона</label>
+
+                    <div class="d-flex flex-wrap gap-2" id="color-picker">
+
+                        <!-- стандартные цвета -->
+                        <button type="button" class="color-swatch" data-color="#ffffff" style="background:#ffffff"></button>
+                        <button type="button" class="color-swatch" data-color="#dc3545" style="background:#dc3545"></button>
+                        <button type="button" class="color-swatch" data-color="#198754" style="background:#198754"></button>
+                        <button type="button" class="color-swatch" data-color="#0d6efd" style="background:#0d6efd"></button>
+                        <button type="button" class="color-swatch" data-color="#ffc107" style="background:#ffc107"></button>
+
+                        <!-- свой цвет -->
+                        <button type="button"
+                                class="color-swatch custom-color"
+                                id="custom-color-btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#customColorModal">
+                            +
+                        </button>
+
+                    </div>
+
+                    <!-- скрытое поле, которое реально отправляется -->
+                    <input type="hidden"
+                           name="background_color"
+                           id="background-color-input"
+                           value="#ffffff">
+                </div>
+
+            </div>
+        </div>
+
+
     </form>
+
+    <!-- Modal: выбор своего цвета -->
+    <div class="modal fade" id="customColorModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Выберите цвет</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+          </div>
+          <div class="modal-body text-center">
+            <input type="color" id="custom-color-input" value="#ffffff">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button type="button" class="btn btn-primary" id="custom-color-ok">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <div id="words-section" class="mt-5" style="display: none;">
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -270,6 +349,20 @@ async function saveList() {
     const formDataSave = new FormData();
     formDataSave.append("subtitle_name", document.getElementById("subtitle-name").value.trim());
 
+    formDataSave.append(
+        "background_color",
+        document.getElementById("background-color-input").value
+    );
+
+    const bgImageInput = document.getElementById("background-image");
+
+    if (bgImageInput && bgImageInput.files.length > 0) {
+        formDataSave.append(
+            "background_image",
+            bgImageInput.files[0]
+        );
+    }
+
     words.forEach(w => formDataSave.append("words", JSON.stringify(w)));
 
     const csrftoken = getCookie('csrftoken');
@@ -328,7 +421,85 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('clear-btn-top').addEventListener('click', clearAll);
     document.getElementById('clear-btn-bottom').addEventListener('click', clearAll);
 
+    document.getElementById("custom-color-ok").addEventListener("click", function () {
+        const color = document.getElementById("custom-color-input").value;
+
+        // записываем цвет в hidden input
+        document.getElementById('background-color-input').value = color;
+
+        // выделяем этот цвет на палитре
+        document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
+
+        // создаём/обновляем кнопку “свой цвет” (чтобы видно было выбранный цвет)
+        const customBtn = document.getElementById('custom-color-btn');
+        customBtn.style.background = color;
+        customBtn.classList.add('active');
+
+        // закрываем модальное окно
+        const modalEl = document.getElementById('customColorModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+    });
+
+
+    document.querySelectorAll('.color-swatch').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const color = this.dataset.color;
+        if (!color) return;
+
+        // записываем цвет в hidden input
+        document.getElementById('background-color-input').value = color;
+
+        // визуально отмечаем выбранный цвет
+        document.querySelectorAll('.color-swatch').forEach(b => {
+            b.classList.remove('active');
+        });
+        this.classList.add('active');
+    });
+});
+
     handleInputChange();
 });
+
+    // ──────────────────────────────────────────────
+// Выбор цвета фона
+// ──────────────────────────────────────────────
+(function initColorPicker() {
+    const swatches = document.querySelectorAll('.color-swatch[data-color]');
+    const hiddenInput = document.getElementById('background-color-input');
+    const customBtn = document.getElementById('custom-color-btn');
+    const customInput = document.getElementById('custom-color-input');
+
+    function setActive(el, color) {
+        swatches.forEach(s => s.classList.remove('active'));
+        customBtn.classList.remove('active');
+        el.classList.add('active');
+        hiddenInput.value = color;
+    }
+
+    swatches.forEach(btn => {
+        btn.addEventListener('click', () => {
+            setActive(btn, btn.dataset.color);
+        });
+    });
+
+    customBtn.addEventListener('click', () => {
+        customInput.click();
+    });
+
+    customInput.addEventListener('input', () => {
+        const color = customInput.value;
+        customBtn.style.background = color;
+        setActive(customBtn, color);
+    });
+
+    // активируем белый по умолчанию
+    const defaultBtn = document.querySelector('.color-swatch[data-color="#ffffff"]');
+    if (defaultBtn) {
+        defaultBtn.classList.add('active');
+    }
+})();
+
+
 </script>
 {% endblock %}

@@ -1,222 +1,161 @@
-у меня есть такой шаблон где отображаются пользователям опубликованные списки
-я хочу чтоб при нажати на лайк у всех пользователей без перезагрузки отображалась
-новое количество лайков
-техлонологию для этого хочу использовать redis
+urls.py
+path("dictionary/", views.dictionary_view, name="dictionary"),
+path("api/dictionary/", views.dictionary_api, name="dictionary_api"),
 
-вот шаблон word_lists.html
+dictionary.html
 {% extends "base.html" %}
 {% load static %}
 
 {% block content %}
 <div class="container mt-4">
+    <h2>Dictionary</h2>
 
-    <div class="row g-4">
-        {% for list in word_lists %}
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm list-card {% if list.is_public %}border-success{% endif %}">
+    <input
+        type="text"
+        id="searchInput"
+        class="form-control mb-3"
+        placeholder="Search word..."
+    >
 
-                <div class="card-body d-flex flex-column">
+    <div id="wordsContainer"></div>
 
-                    <!-- Заголовок: название + лайки -->
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-
-                        <!-- Название -->
-                        <h5 class="card-title mb-0">
-                            {{ list.pk }} {{ list.name }}
-                        </h5>
-
-                        <!-- Лайки -->
-                        <div class="text-center">
-                            <button
-                                class="btn btn-link p-0 like-btn"
-                                data-list-id="{{ list.id }}"
-                                {% if not list.is_public %}disabled{% endif %}
-                            >
-                                <i class="bi
-                                   {% if list.is_liked %}
-                                       bi-heart-fill text-danger
-                                   {% else %}
-                                       bi-heart
-                                   {% endif %}
-                                   fs-5">
-                                </i>
-                            </button>
-
-                            <div class="small text-muted likes-count">
-                                {{ list.likes.count }}
-                            </div>
-                        </div>
-
-                    </div>
-
-
-                    <!-- Слов / Опубликовать -->
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-
-                        <!-- Количество слов -->
-                        <span class="text-muted small">
-                            Слов: {{ list.quantity_words }}
-                        </span>
-
-                        <!-- Switch публикации -->
-                        {% if request.user == list.owner or request.user.is_staff %}
-                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
-                                <label class="form-check-label small text-muted mb-0">
-                                    Опубликовать
-                                </label>
-                                <input
-                                    class="form-check-input publish-switch m-0"
-                                    type="checkbox"
-                                    role="switch"
-                                    data-list-id="{{ list.id }}"
-                                    {% if list.is_public %}checked{% endif %}
-                                >
-                            </div>
-                        {% endif %}
-
-                    </div>
-
-                    <!-- Низ карточки -->
-                    <div class="mt-auto d-flex justify-content-between align-items-center">
-
-                        <!-- Открыть -->
-                        <a href="{% url 'word_list_detail' list.id %}"
-                           class="btn btn-primary btn-sm">
-                            Открыть
-                        </a>
-
-                        <!-- Действия -->
-                        {% if request.user == list.owner %}
-                            <div class="btn-group">
-                                <button
-                                    class="btn btn-light btn-sm icon-btn delete-list"
-                                    data-list-id="{{ list.id }}">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-
-                                <button class="btn btn-light btn-sm icon-btn">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                            </div>
-                        {% endif %}
-
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
-        {% empty %}
-            <p class="text-muted">Списков пока нет</p>
-        {% endfor %}
+    <div id="loader" class="text-center my-4" style="display:none;">
+        Loading...
     </div>
+
+    <div id="sentinel"></div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'lists/js/lists.js' %}"></script>
-{% endblock %}
+<script>
+let page = 1;
+let hasNext = true;
+let loading = false;
+let query = "";
 
-и lists.js
-// Получение CSRF токена из cookie
-function getCookie(name) {
-    let cookieValue = null;
-    document.cookie.split(';').forEach(c => {
-        c = c.trim();
-        if (c.startsWith(name + '=')) {
-            cookieValue = decodeURIComponent(c.substring(name.length + 1));
-        }
+const container = document.getElementById("wordsContainer");
+const loader = document.getElementById("loader");
+const sentinel = document.getElementById("sentinel");
+const searchInput = document.getElementById("searchInput");
+
+async function loadWords(reset=false) {
+    if (loading || !hasNext) return;
+
+    loading = true;
+    loader.style.display = "block";
+
+    const response = await fetch(
+        `{% url "dictionary_api" %}?page=${page}&q=${query}`
+    );
+    const data = await response.json();
+
+    if (reset) container.innerHTML = "";
+
+    data.results.forEach(word => {
+        const div = document.createElement("div");
+        div.className = "card mb-2 p-3";
+        div.innerHTML = `
+            <strong>${word.name}</strong>
+            <span class="text-muted">${word.transcription || ""}</span>
+            <div>
+                ${word.parts_of_speech.map(pos =>
+                    `<div><em>${pos.name}</em>: ${pos.translations.join(", ")}</div>`
+                ).join("")}
+            </div>
+        `;
+        container.appendChild(div);
     });
-    return cookieValue;
+
+    hasNext = data.has_next;
+    page++;
+    loading = false;
+    loader.style.display = "none";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    const csrftoken = getCookie("csrftoken");
-
-    // Обработчик удаления
-    document.querySelectorAll(".delete-list").forEach(btn => {
-        btn.addEventListener("click", async function () {
-            if (!confirm("Удалить список?")) return;
-
-            const listId = this.dataset.listId;
-
-            try {
-                const res = await fetch(`/list/${listId}/delete/`, {
-                    method: "POST",
-                    headers: {
-                        "X-CSRFToken": csrftoken,
-                    },
-                });
-
-                if (res.ok) {
-                    // Плавное исчезновение карточки
-                    const col = this.closest(".col-md-6");
-                    col.style.transition = "opacity 0.3s ease, transform 0.3s ease";
-                    col.style.opacity = "0";
-                    col.style.transform = "scale(0.95)";
-                    setTimeout(() => col.remove(), 300);
-                } else {
-                    const text = await res.text();
-                    console.error("Ошибка удаления:", text);
-                    alert("Ошибка при удалении");
-                }
-            } catch(e) {
-                console.error(e);
-                alert("Ошибка при удалении");
-            }
-        });
-    });
-    const switches = document.querySelectorAll(".publish-switch");
-
-    switches.forEach(sw => {
-        sw.addEventListener("change", function () {
-            const listId = this.dataset.listId;
-
-            fetch(`/lists/${listId}/toggle-publish/`, {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": getCookie("csrftoken"),
-                }
-            })
-            .then(res => {
-                if (!res.ok) {
-                    this.checked = !this.checked;
-                    throw new Error("Permission denied");
-                }
-                return res.json();
-            })
-            .then(data => {
-                this.checked = data.is_public;
-            })
-            .catch(() => {
-                this.checked = !this.checked;
-            });
-        });
-    });
-    document.querySelectorAll(".like-btn").forEach(btn => {
-        btn.addEventListener("click", function () {
-            const listId = this.dataset.listId;
-            const icon = this.querySelector("i");
-            const countEl = this.parentElement.querySelector(".likes-count");
-
-            fetch(`/lists/${listId}/toggle-like/`, {
-                method: "POST",
-                headers: {
-                    "X-CSRFToken": getCookie("csrftoken"),
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.liked) {
-                    icon.classList.remove("bi-heart");
-                    icon.classList.add("bi-heart-fill", "text-danger");
-                } else {
-                    icon.classList.remove("bi-heart-fill", "text-danger");
-                    icon.classList.add("bi-heart");
-                }
-
-                countEl.textContent = data.likes_count;
-            });
-        });
-    });
+const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) loadWords();
 });
+
+observer.observe(sentinel);
+
+searchInput.addEventListener("input", () => {
+    page = 1;
+    hasNext = true;
+    query = searchInput.value;
+    loadWords(true);
+});
+
+loadWords();
+</script>
+{% endblock %}
+
+views.py
+PAGE_SIZE = 100
+
+
+def dictionary_api(request):
+    page = int(request.GET.get("page", 1))
+    q = request.GET.get("q", "").strip()
+
+    qs = (
+        Word.objects
+        .all()
+        .prefetch_related(
+            Prefetch(
+                "parts_of_speech",
+                queryset=PathOfSpeech.objects.prefetch_related("translations"),
+            )
+        )
+        .order_by("name")
+    )
+
+    if q:
+        qs = qs.filter(name__icontains=q)
+
+    paginator = Paginator(qs, PAGE_SIZE)
+    page_obj = paginator.get_page(page)
+
+    results = []
+    for word in page_obj:
+        results.append({
+            "id": word.id,
+            "name": word.name,
+            "transcription": word.transcription,
+            "parts_of_speech": [
+                {
+                    "name": pos.name,
+                    "translations": [t.translation for t in pos.translations.all()],
+                }
+                for pos in word.parts_of_speech.all()
+            ],
+        })
+
+    return JsonResponse({
+        "results": results,
+        "has_next": page_obj.has_next(),
+    })
+
+def dictionary_view(request):
+    return render(request, "dictionary.html")
+
+почему ошибка
+Internal Server Error: /dictionary/
+Traceback (most recent call last):
+  File "/home/chris/PycharmProjects/Sites/FirstSiteEnglish/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/PycharmProjects/Sites/FirstSiteEnglish/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/PycharmProjects/Sites/FirstSiteEnglish/english/lists/views.py", line 83, in dictionary_view
+    return render(request, "dictionary.html")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/PycharmProjects/Sites/FirstSiteEnglish/.venv/lib/python3.12/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/PycharmProjects/Sites/FirstSiteEnglish/.venv/lib/python3.12/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/PycharmProjects/Sites/FirstSiteEnglish/.venv/lib/python3.12/site-packages/django/template/loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+django.template.exceptions.TemplateDoesNotExist: dictionary.html
+[25/Jan/2026 13:11:03] "GET /dictionary/ HTTP/1.1" 500 85319

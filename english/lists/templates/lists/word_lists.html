@@ -7,20 +7,38 @@
     <div class="row g-4">
         {% for list in word_lists %}
         <div class="col-md-6 col-lg-4">
-            <div class="card h-100 shadow-sm list-card {% if list.is_public %}border-success{% endif %}">
-
+            <div class="card h-100 shadow-sm list-card
+                 {% if list.is_public %}border-success{% endif %}"
+                 style="
+                    {% if list.background_image %}
+                        background-image: url('{{ list.background_image.url }}');
+                        background-size: cover;
+                        background-position: center;
+                    {% else %}
+                        background-color: {{ list.background_color }};
+                    {% endif %}
+                 ">
                 <div class="card-body d-flex flex-column">
 
                     <!-- Заголовок: название + лайки -->
                     <div class="d-flex justify-content-between align-items-start mb-3">
 
                         <!-- Название -->
-                        <h5 class="card-title mb-0">
-                            {{ list.pk }} {{ list.name }}
+                        <h5 class="card-title mb-0 me-1">
+                            <span class="
+                            {% if list.background_image %}
+                                bg-white bg-opacity-50 px-2 py-2 rounded d-inline-block
+                            {% endif %}">
+                                {{ list.name }}
+                            </span>
                         </h5>
 
+
                         <!-- Лайки -->
-                        <div class="text-center">
+                        <div class="text-center
+                        {% if list.background_image %}
+                            bg-white bg-opacity-50 px-2 py-2 rounded d-inline-block
+                        {% endif %}">
                             <button
                                 class="btn btn-link p-0 like-btn"
                                 data-list-id="{{ list.id }}"
@@ -48,13 +66,19 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
 
                         <!-- Количество слов -->
-                        <span class="text-muted small">
+                        <span class="text-muted small
+                        {% if list.background_image %}
+                            bg-white bg-opacity-50 px-2 py-2 rounded d-inline-block
+                        {% endif %}">
                             Слов: {{ list.quantity_words }}
                         </span>
 
                         <!-- Switch публикации -->
                         {% if request.user == list.owner or request.user.is_staff %}
-                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
+                            <div class="form-check form-switch m-0 d-flex align-items-center gap-2
+                                {% if list.background_image %}
+                                    bg-white bg-opacity-50 px-2 py-2 rounded d-inline-block
+                                {% endif %}">
                                 <label class="form-check-label small text-muted mb-0">
                                     Опубликовать
                                 </label>
@@ -75,6 +99,10 @@
 
                         <!-- Открыть -->
                         <a href="{% url 'word_list_detail' list.id %}"
+                           class="btn btn-primary btn-sm">
+                            Просмотреть
+                        </a>
+                        <a href="{% url 'word_mini_cards' list.id %}"
                            class="btn btn-primary btn-sm">
                             Открыть
                         </a>

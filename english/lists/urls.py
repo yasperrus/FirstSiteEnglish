@@ -1,8 +1,15 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.urls import path
 from django.views.generic import TemplateView
 
 from . import views
-from .views import SubtitlePreviewView, SaveSubtitleListView
+from .views import (
+    SubtitlePreviewView,
+    SaveSubtitleListView,
+    ToggleKnownWordView,
+    KnownWordsView,
+)
 
 urlpatterns = [
     path("", views.public_lists, name="public_lists"),
@@ -36,4 +43,13 @@ urlpatterns = [
         views.toggle_like,
         name="toggle_like"
     ),
+    path("list/<int:list_id>/mini-cards/", views.word_mini_cards, name="word_mini_cards"),
+    path("known-words/", KnownWordsView.as_view(), name="known_words"),
+    path("toggle-known-word/", ToggleKnownWordView.as_view(), name="toggle_known_word"),
+    path("dictionary/", views.dictionary_view, name="dictionary"),
+    path("api/dictionary/", views.dictionary_api, name="dictionary_api"),
+
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
