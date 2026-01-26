@@ -1,0 +1,11 @@
+Django==6.0.1
+spacy==3.8.11
+cryptography
+PyJWT
+better-profanity
+Pillow
+
+channels
+whitenoise
+
+tabulate
