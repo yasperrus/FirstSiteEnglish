@@ -338,22 +338,53 @@ def word_lists(request):
 
 def word_list_detail(request, list_id):
     word_list = get_object_or_404(
-        SubtitleList.objects.prefetch_related(
-            'words__parts_of_speech__translations'
-        ),
+        SubtitleList,
         id=list_id
     )
 
     if not word_list.is_public:
         if not request.user.is_authenticated:
             return HttpResponseForbidden()
-
         if request.user != word_list.owner and not request.user.is_staff:
             return HttpResponseForbidden()
 
+    words = (
+        word_list.words
+        .all()
+        .annotate(
+            is_known=Exists(
+                KnownWord.objects.filter(
+                    user=request.user,
+                    word=OuterRef("pk")
+                )
+            )
+        )
+        .prefetch_related("parts_of_speech__translations")
+    )
+
     return render(request, "lists/word_list_detail.html", {
-        "word_list": word_list
+        "word_list": word_list,
+        "words": words,
     })
+
+# def word_list_detail(request, list_id):
+#     word_list = get_object_or_404(
+#         SubtitleList.objects.prefetch_related(
+#             'words__parts_of_speech__translations'
+#         ),
+#         id=list_id
+#     )
+#
+#     if not word_list.is_public:
+#         if not request.user.is_authenticated:
+#             return HttpResponseForbidden()
+#
+#         if request.user != word_list.owner and not request.user.is_staff:
+#             return HttpResponseForbidden()
+#
+#     return render(request, "lists/word_list_detail.html", {
+#         "word_list": word_list
+#     })
 
 
 def get_translations(request, word_id):
