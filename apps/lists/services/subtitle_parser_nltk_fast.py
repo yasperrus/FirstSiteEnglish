@@ -2,6 +2,7 @@ import re
 from collections import Counter
 from typing import List
 
+import nltk
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 from nltk import pos_tag
@@ -10,8 +11,10 @@ from apps.lists.models import Word
 
 
 lemmatizer = WordNetLemmatizer()
-stop_words = set(stopwords.words("english"))
-
+try:
+    stop_words = set(stopwords.words("english"))
+except:
+    nltk.download('stopwords')
 
 class SubtitleWord:
     def __init__(

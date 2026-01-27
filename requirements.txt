@@ -1,6 +1,5 @@
 Django==6.0.1
 nltk==3.9.2
-spacy==3.8.11
 cryptography==46.0.3
 PyJWT==2.10.1
 better-profanity==0.7.0
