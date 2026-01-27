@@ -74,6 +74,7 @@ MIDDLEWARE = [
 ASGI_APPLICATION = "config.asgi.application"
 
 REDIS_URL = "redis://default:BdmUNUTtAfUjdZtaRdHoGOtlGzqOzBDS@redis.railway.internal:6379"
+REDIS_URL = "redis://default:QPMINwaFZoLcoDQEREbKBnSJSkDjezQL@redis.railway.internal:6379"
 
 CHANNEL_LAYERS = {
     "default": {
@@ -177,3 +178,6 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
+
+
