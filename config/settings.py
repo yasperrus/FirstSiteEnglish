@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -72,16 +73,28 @@ MIDDLEWARE = [
 
 ASGI_APPLICATION = "config.asgi.application"
 
-REDIS_URL = os.environ.get("REDIS_URL") #redis://default:QPMINwaFZoLcoDQEREbKBnSJSkDjezQL@redis.railway.internal:6379
-if not REDIS_URL:
-    # чтобы не падало локально, если Redis не подключен
-    REDIS_URL = "redis://127.0.0.1:6379"
+REDIS_URL = os.getenv("REDIS_URL")
+
+# Разбор URL для Channels
+if REDIS_URL:
+    url = urlparse(REDIS_URL)
+    REDIS_HOST = url.hostname
+    REDIS_PORT = url.port
+    REDIS_PASSWORD = url.password
+else:
+    # fallback для локальной разработки
+    REDIS_HOST = "127.0.0.1"
+    REDIS_PORT = 6379
+    REDIS_PASSWORD = None
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [REDIS_URL], #("127.0.0.1", 6379)
+            "hosts": [{
+                "address": (REDIS_HOST, REDIS_PORT),
+                "password": REDIS_PASSWORD,
+            }],
         },
     },
 }
