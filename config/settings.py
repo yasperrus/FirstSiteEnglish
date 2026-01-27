@@ -73,28 +73,13 @@ MIDDLEWARE = [
 
 ASGI_APPLICATION = "config.asgi.application"
 
-REDIS_URL = os.getenv("REDIS_URL")
-
-# Разбор URL для Channels
-if REDIS_URL:
-    url = urlparse(REDIS_URL)
-    REDIS_HOST = url.hostname
-    REDIS_PORT = url.port
-    REDIS_PASSWORD = url.password
-else:
-    # fallback для локальной разработки
-    REDIS_HOST = "127.0.0.1"
-    REDIS_PORT = 6379
-    REDIS_PASSWORD = None
+REDIS_URL = "redis://default:BdmUNUTtAfUjdZtaRdHoGOtlGzqOzBDS@redis.railway.internal:6379"
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [{
-                "address": (REDIS_HOST, REDIS_PORT),
-                "password": REDIS_PASSWORD,
-            }],
+            "hosts": [REDIS_URL],
         },
     },
 }
