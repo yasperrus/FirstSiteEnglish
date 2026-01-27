@@ -1,0 +1,50 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.pdb
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Django
+*.log
+*.pot
+*.py[cod]
+db.sqlite3
+db.sqlite3-journal
+
+# Media files
+media/
+media/**
+
+# Static files (collectstatic output)
+staticfiles/
+staticfiles/**
+
+# Django migrations (если хочешь их хранить, то удаляй этот блок)
+# **Обычно миграции хранить нужно**, поэтому оставь закомментированным**
+# */migrations/
+# */migrations/**
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Cache
+*.cache/
+.cache/
