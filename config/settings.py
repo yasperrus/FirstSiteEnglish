@@ -31,9 +31,7 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 ALLOWED_HOSTS = [
-    "firstsiteenglish-production.up.railway.app",
-    "localhost",
-    "127.0.0.1",
+    "*"
 ]
 
 
