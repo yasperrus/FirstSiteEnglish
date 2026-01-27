@@ -27,6 +27,7 @@ DEBUG = True
 
 CSRF_TRUSTED_ORIGINS = [
     "https://firstsiteenglish-production.up.railway.app",
+    "https://firstsiteenglish.railway.app",
 ]
 
 ALLOWED_HOSTS = [
@@ -69,7 +70,11 @@ MIDDLEWARE = [
 
 ASGI_APPLICATION = "config.asgi.application"
 
-REDIS_URL = os.environ.get("REDIS_URL")
+REDIS_URL = os.environ.get("REDIS_URL") #redis://default:QPMINwaFZoLcoDQEREbKBnSJSkDjezQL@redis.railway.internal:6379
+if not REDIS_URL:
+    # чтобы не падало локально, если Redis не подключен
+    REDIS_URL = "redis://127.0.0.1:6379"
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",

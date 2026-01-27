@@ -34,6 +34,7 @@ en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_
 executing==2.2.1
 fastjsonschema==2.21.2
 git-filter-repo==2.47.0
+gunicorn==24.1.1
 hyperlink==21.0.0
 idna==3.11
 Incremental==24.11.0
