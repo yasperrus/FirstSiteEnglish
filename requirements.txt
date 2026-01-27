@@ -4,6 +4,7 @@ cryptography==46.0.3
 PyJWT==2.10.1
 better-profanity==0.7.0
 pillow==12.1.0
+uvicorn==0.40.0
 gunicorn==24.1.1
 channels==4.3.2
 channels_redis==4.3.0
