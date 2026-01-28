@@ -115,14 +115,14 @@ class KnownWord(models.Model):
 
 
 class Word(models.Model):
-    name = models.CharField(max_length=255, unique=True, db_index=True,null=True, blank=True)
-    transcription = models.CharField(max_length=30, blank=True, default="")
+    name = models.CharField(max_length=128, unique=True, db_index=True,null=True, blank=True)
+    transcription = models.CharField(max_length=128, blank=True, default="")
 
     def __str__(self):
         return self.name
 
 class PathOfSpeech(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=128)
     is_main = models.BooleanField(default=False)
 
     word = models.ForeignKey(

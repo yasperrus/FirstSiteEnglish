@@ -11,7 +11,7 @@ from apps.lists.models import Word
 
 
 lemmatizer = WordNetLemmatizer()
-stop_words = set(stopwords.words("config"))
+stop_words = set(stopwords.words("english"))
 
 
 class SubtitleWord:
