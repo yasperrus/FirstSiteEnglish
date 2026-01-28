@@ -1,21 +1,20 @@
-FROM python:3.12-slim
+#!/usr/bin/env bash
+set -e
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+echo "Checking database state..."
 
-WORKDIR /app
+psql "$DATABASE_URL" -Atc \
+"SELECT 1 FROM information_schema.tables WHERE table_name='django_migrations';" \
+| grep -q 1 \
+|| (
+  echo "Database is empty. Importing dump.sql..."
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 < dump.sql
+)
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+echo "Applying migrations..."
+python manage.py migrate --fake-initial
 
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . /app/
-
-# Сборка статики
-RUN python manage.py collectstatic --noinput
-
-# Запуск
-CMD ["sh", "-c", "gunicorn config.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT}"]
+echo "Starting server..."
+exec gunicorn config.asgi:application \
+  -k uvicorn.workers.UvicornWorker \
+  --bind 0.0.0.0:${PORT}
