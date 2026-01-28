@@ -19,5 +19,8 @@ echo "PORT is $PORT"
 exec gunicorn config.asgi:application \
   -k uvicorn.workers.UvicornWorker \
   --bind 0.0.0.0:$PORT \
-  --log-level debug \
-  --access-logfile -
+  --workers 1 \
+  --timeout 120 \
+  --access-logfile - \
+  --error-logfile -
+
