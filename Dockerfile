@@ -1,20 +1,26 @@
-#!/usr/bin/env bash
-set -e
+FROM python:3.12-slim
 
-echo "Checking database state..."
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-psql "$DATABASE_URL" -Atc \
-"SELECT 1 FROM information_schema.tables WHERE table_name='django_migrations';" \
-| grep -q 1 \
-|| (
-  echo "Database is empty. Importing dump.sql..."
-  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 < dump.sql
-)
+WORKDIR /app
 
-echo "Applying migrations..."
-python manage.py migrate --fake-initial
+# установить postgresql-client
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
 
-echo "Starting server..."
-exec gunicorn config.asgi:application \
-  -k uvicorn.workers.UvicornWorker \
-  --bind 0.0.0.0:${PORT}
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . /app/
+
+# сделать entrypoint исполняемым
+RUN chmod +x entrypoint.sh
+
+# собрать статику (если нужно)
+RUN python manage.py collectstatic --noinput
+
+# запуск через entrypoint
+ENTRYPOINT ["./entrypoint.sh"]
