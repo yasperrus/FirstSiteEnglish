@@ -12,6 +12,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("health/", views.health),
     path("", views.public_lists, name="public_lists"),
     path("my-lists/", views.my_lists, name="my_lists"),
 

@@ -35,6 +35,9 @@ PAGE_SIZE = 100
 
 from tabulate import tabulate
 
+def health(request):
+    return HttpResponse("OK")
+
 @login_required
 def download_words(request, list_id):
     ids = request.GET.get("ids", "")
