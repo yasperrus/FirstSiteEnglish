@@ -15,6 +15,7 @@ echo "Applying migrations..."
 python manage.py migrate --fake-initial
 
 echo "Starting server..."
+echo "PORT is $PORT"
 exec gunicorn config.asgi:application \
   -k uvicorn.workers.UvicornWorker \
   --bind 0.0.0.0:${PORT}
