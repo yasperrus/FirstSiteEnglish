@@ -23,4 +23,4 @@ RUN chmod +x entrypoint.sh
 RUN python manage.py collectstatic --noinput
 
 # запуск через entrypoint
-ENTRYPOINT ["./entrypoint.sh"]
+# ENTRYPOINT ["./entrypoint.sh"]

@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ["SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG")
+DEBUG = True
 print(f"DEBUG: {DEBUG}")
 RAILWAY_PUBLIC_DOMAIN = os.getenv("RAILWAY_PUBLIC_DOMAIN")
 
@@ -35,12 +35,12 @@ RAILWAY_PUBLIC_DOMAIN = os.getenv("RAILWAY_PUBLIC_DOMAIN")
 CSRF_TRUSTED_ORIGINS = [
     f"https://{RAILWAY_PUBLIC_DOMAIN}"
 ]
-
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    RAILWAY_PUBLIC_DOMAIN
-]
+ALLOWED_HOSTS = ["*"]
+# ALLOWED_HOSTS = [
+#     "localhost",
+#     "127.0.0.1",
+#     RAILWAY_PUBLIC_DOMAIN
+# ]
 
 
 # Application definition
