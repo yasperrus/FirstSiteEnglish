@@ -1,4 +1,5 @@
 import json
+import traceback
 
 from asgiref.sync import async_to_sync
 from better_profanity import profanity
@@ -521,40 +522,51 @@ def get_translations(request, word_id):
 
 class SubtitlePreviewView(LoginRequiredMixin, View):
     def post(self, request):
-        file = request.FILES.get("subtitle_file")
-        text = request.POST.get("subtitle_text", "").strip()
-
-        source_text = None
-        subtitle_name = None
-
-        if file:
-            try:
-                source_text = file.read().decode("utf-8")
-                subtitle_name = file.name
-            except UnicodeDecodeError:
-                return JsonResponse(
-                    {"error": "Не удалось прочитать файл. Используйте UTF-8"},
-                    status=400,
-                )
-        elif text:
-            source_text = text
-
-        else:
-            return JsonResponse({"error": "Не передан ни файл, ни текст"}, status=400)
-
-        if not source_text.strip():
-            return JsonResponse({"error": "Пустой текст для обработки"}, status=400)
-
         try:
+            # Получаем файл или текст
+            file = request.FILES.get("subtitle_file")
+            text = request.POST.get("subtitle_text", "").strip()
+
+            if not file and not text:
+                return JsonResponse({"error": "Не передан ни файл, ни текст"}, status=400)
+
+            source_text = ""
+            subtitle_name = None
+
+            if file:
+                subtitle_name = file.name
+                try:
+                    source_text = file.read().decode("utf-8")
+                except UnicodeDecodeError:
+                    # fallback: игнорируем ошибки кодировки
+                    source_text = file.read().decode("utf-8", errors="ignore")
+            else:
+                source_text = text
+
+            if not source_text.strip():
+                return JsonResponse({"error": "Пустой текст для обработки"}, status=400)
+
+            # Парсим текст
             parser = ConvertTextToSubtitleWords(source_text)
             words_list = parser.to_dict()
-        except Exception as e:
-            return JsonResponse({"error": f"Ошибка обработки: {str(e)}"}, status=500)
 
-        return JsonResponse({
-            "subtitle_name": subtitle_name,
-            "words": words_list
-        })
+            # Проверка сериализуемости в JSON
+            try:
+                json.dumps(words_list)
+            except TypeError as e:
+                return JsonResponse({"error": f"Невозможно сериализовать результат: {e}"}, status=500)
+
+            return JsonResponse({
+                "subtitle_name": subtitle_name,
+                "words": words_list
+            })
+
+        except Exception as e:
+            # Полная трассировка в консоль для дебага
+            print("Ошибка на сервере /subtitle/preview/:", str(e))
+            traceback.print_exc()
+            return JsonResponse({"error": f"Ошибка сервера: {str(e)}"}, status=500)
+
 
 
 class SaveSubtitleListView(LoginRequiredMixin, View):
