@@ -1,15 +1,15 @@
 import nltk
 
-REQUIRED = [
-    "stopwords",
-    "punkt",
-    "averaged_perceptron_tagger",
-    "wordnet",
-    "omw-1.4",
-]
+REQUIRED = {
+    "corpora/stopwords": "stopwords",
+    "tokenizers/punkt": "punkt",
+    "taggers/averaged_perceptron_tagger": "averaged_perceptron_tagger",
+    "corpora/wordnet": "wordnet",
+    "corpora/omw-1.4": "omw-1.4",
+}
 
-for pkg in REQUIRED:
+for resource_path, package_name in REQUIRED.items():
     try:
-        nltk.data.find(pkg)
+        nltk.data.find(resource_path)
     except LookupError:
-        nltk.download(pkg)
+        nltk.download(package_name)
