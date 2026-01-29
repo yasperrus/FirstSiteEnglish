@@ -1,6 +1,9 @@
 FROM python:3.13-slim
 
-RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
+# Системные зависимости для компиляции и работы PostgreSQL
+RUN apt-get update && \
+    apt-get install -y gcc libpq-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -12,7 +15,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Скачиваем NLTK ресурсы
-RUN python -m nltk.downloader -d /usr/share/nltk_data stopwords punkt wordnet omw-1.4 averaged_perceptron_tagger
+RUN python -m nltk.downloader -d /usr/share/nltk_data \
+    stopwords \
+    punkt \
+    wordnet \
+    omw-1.4 \
+    averaged_perceptron_tagger \
+    averaged_perceptron_tagger_eng
 
+# Указываем NLTK_DATA переменную окружения
 ENV NLTK_DATA=/usr/share/nltk_data
-
