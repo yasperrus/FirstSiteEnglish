@@ -231,6 +231,7 @@ async function autoPreview() {
         const res = await fetch("{% url 'subtitle_preview' %}", {
             method: "POST",
             body: formData,
+            credentials: "same-origin",
             headers: { 'X-CSRFToken': csrftoken }
         });
 
@@ -390,7 +391,7 @@ async function saveList() {
 // ──────────────────────────────────────────────
 // Инициализация — всё привязываем здесь
 // ──────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log("Скрипт загружен и DOM готов");
 
     const fileInput = document.getElementById('subtitle-file');
@@ -398,8 +399,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const processBtn = document.getElementById('process-text-btn');
 
     if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-            console.log("Файл выбран:", e.target.files.length > 0 ? e.target.files[0].name : "нет файла");
+        fileInput.addEventListener('change', function (e) {
             if (e.target.files.length > 0) {
                 document.getElementById('subtitle-text').value = '';
                 handleInputChange();
@@ -416,49 +416,42 @@ document.addEventListener('DOMContentLoaded', function() {
         processBtn.addEventListener('click', autoPreview);
     }
 
-    document.getElementById('save-btn-top').addEventListener('click', saveList);
-    document.getElementById('save-btn-bottom').addEventListener('click', saveList);
-    document.getElementById('clear-btn-top').addEventListener('click', clearAll);
-    document.getElementById('clear-btn-bottom').addEventListener('click', clearAll);
+    document.getElementById('save-btn-top')?.addEventListener('click', saveList);
+    document.getElementById('save-btn-bottom')?.addEventListener('click', saveList);
+    document.getElementById('clear-btn-top')?.addEventListener('click', clearAll);
+    document.getElementById('clear-btn-bottom')?.addEventListener('click', clearAll);
 
-    document.getElementById("custom-color-ok").addEventListener("click", function () {
+    document.getElementById("custom-color-ok")?.addEventListener("click", function () {
         const color = document.getElementById("custom-color-input").value;
-
-        // записываем цвет в hidden input
         document.getElementById('background-color-input').value = color;
 
-        // выделяем этот цвет на палитре
         document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
 
-        // создаём/обновляем кнопку “свой цвет” (чтобы видно было выбранный цвет)
         const customBtn = document.getElementById('custom-color-btn');
         customBtn.style.background = color;
         customBtn.classList.add('active');
 
-        // закрываем модальное окно
-        const modalEl = document.getElementById('customColorModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        modal.hide();
+        bootstrap.Modal.getInstance(
+            document.getElementById('customColorModal')
+        )?.hide();
     });
-
 
     document.querySelectorAll('.color-swatch').forEach(btn => {
-    btn.addEventListener('click', function () {
-        const color = this.dataset.color;
-        if (!color) return;
+        btn.addEventListener('click', function () {
+            const color = this.dataset.color;
+            if (!color) return;
 
-        // записываем цвет в hidden input
-        document.getElementById('background-color-input').value = color;
+            document.getElementById('background-color-input').value = color;
 
-        // визуально отмечаем выбранный цвет
-        document.querySelectorAll('.color-swatch').forEach(b => {
-            b.classList.remove('active');
+            document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
         });
-        this.classList.add('active');
     });
 
+    // ✅ один раз, после всех биндингов
     handleInputChange();
 });
+
 
     // ──────────────────────────────────────────────
 // Выбор цвета фона

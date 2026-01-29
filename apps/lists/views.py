@@ -567,24 +567,24 @@ class SaveSubtitleListView(LoginRequiredMixin, View):
         background_color = request.POST.get("background_color", "#ffffff")
         background_image = request.FILES.get("background_image")
 
+        if background_image:
+            if background_image.content_type not in self.ALLOWED_CONTENT_TYPES:
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": "Недопустимый формат файла. Разрешены: jpg, png, webp.",
+                    },
+                    status=400,
+                )
 
-        if background_image.content_type not in self.ALLOWED_CONTENT_TYPES:
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "message": "Недопустимый формат файла. Разрешены: jpg, png, webp.",
-                },
-                status=400,
-            )
-
-        if background_image and background_image.size > self.MAX_IMAGE_SIZE:
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "message": "Файл слишком большой. Максимальный размер — 2 МБ.",
-                },
-                status=400,
-            )
+            if background_image and background_image.size > self.MAX_IMAGE_SIZE:
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": "Файл слишком большой. Максимальный размер — 2 МБ.",
+                    },
+                    status=400,
+                )
 
         if profanity.contains_profanity(subtitle_name):
             return JsonResponse(
