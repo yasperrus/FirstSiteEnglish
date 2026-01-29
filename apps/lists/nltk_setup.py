@@ -1,15 +1,24 @@
+import os
 import nltk
 
-REQUIRED = {
-    "corpora/stopwords": "stopwords",
-    "tokenizers/punkt": "punkt",
-    "taggers/averaged_perceptron_tagger": "averaged_perceptron_tagger",
-    "corpora/wordnet": "wordnet",
-    "corpora/omw-1.4": "omw-1.4",
-}
+# Определяем корень проекта (один уровень выше apps/)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+NLTK_DATA_DIR = os.path.join(BASE_DIR, "nltk_data")
 
-for resource_path, package_name in REQUIRED.items():
+# Добавляем папку nltk_data в путь поиска
+nltk.data.path.append(NLTK_DATA_DIR)
+
+# Список необходимых ресурсов
+REQUIRED = ["stopwords", "punkt", "averaged_perceptron_tagger", "wordnet", "omw-1.4"]
+
+# Проверяем, что все ресурсы есть
+for pkg in REQUIRED:
     try:
-        nltk.data.find(resource_path)
+        if pkg in ["stopwords", "wordnet", "omw-1.4"]:
+            nltk.data.find(f"corpora/{pkg}")
+        elif pkg == "punkt":
+            nltk.data.find(f"tokenizers/{pkg}")
+        else:
+            nltk.data.find(f"taggers/{pkg}")
     except LookupError:
-        nltk.download(package_name)
+        raise RuntimeError(f"NLTK пакет {pkg} не найден в {NLTK_DATA_DIR}")

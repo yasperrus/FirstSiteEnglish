@@ -1,11 +1,20 @@
+import os
 import re
 from collections import Counter
 from typing import List
 
 import nltk
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NLTK_DATA_DIR = os.path.join(BASE_DIR, "nltk_data")
+
+nltk.data.path.append(NLTK_DATA_DIR)
+
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 from nltk import pos_tag
+
+# путь к папке nltk_data в корне проекта
+
 
 from apps.lists.models import Word
 
@@ -13,8 +22,8 @@ from apps.lists.models import Word
 lemmatizer = WordNetLemmatizer()
 try:
     stop_words = set(stopwords.words("english"))
-except:
-    nltk.download('stopwords')
+except LookupError:
+    raise RuntimeError(f"NLTK stopwords не найдены в {NLTK_DATA_DIR}")
 
 class SubtitleWord:
     def __init__(
