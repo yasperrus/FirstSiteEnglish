@@ -98,11 +98,11 @@
                     <div class="mt-auto d-flex justify-content-between align-items-center">
 
                         <!-- Открыть -->
-                        <a href="{% url 'word_list_detail' list.id %}"
+                        <a href="{% url 'lists:word_list_detail' list.id %}"
                            class="btn btn-primary btn-sm">
                             Просмотреть
                         </a>
-                        <a href="{% url 'word_mini_cards' list.id %}"
+                        <a href="{% url 'study:word_mini_cards' list.id %}"
                            class="btn btn-primary btn-sm">
                             Открыть
                         </a>

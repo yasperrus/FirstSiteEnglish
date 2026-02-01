@@ -1,150 +1,3 @@
-{% extends "base.html" %}
-{% load static %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'lists/css/subtitle_add.css' %}">
-{% endblock %}
-{% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4">Добавление списка субтитров</h2>
-
-    <form id="subtitle-form" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        <div class="mb-4">
-
-            <label class="form-label fw-bold">Источник субтитров</label>
-
-            <div class="row g-3" id="source-row">
-
-                <div class="col-md-6 col-sm-12" id="file-col">
-                    <label for="subtitle-file" class="form-label small">Файл (.srt, .vtt и др.)</label>
-                    <input type="file" class="form-control" id="subtitle-file" name="subtitle_file"
-                           accept=".srt,.vtt,.txt">
-                </div>
-
-                <div class="col-md-6 col-sm-12" id="text-col">
-                    <label for="subtitle-text" class="form-label small">Или вставьте текст субтитров</label>
-                    <textarea class="form-control mb-2"
-                              id="subtitle-text"
-                              name="subtitle_text"
-                              placeholder="Вставьте сюда текст субтитров..."
-                              rows="1"
-                              style="resize: none; overflow: hidden;  transition: all 0.25s ease;"></textarea>
-
-                    <button type="button" class="btn btn-outline-primary btn-sm d-none" id="process-text-btn">
-                        Обработать текст
-                    </button>
-                </div>
-
-            </div>
-        </div>
-
-        <div class="mb-4">
-            <label for="subtitle-name" class="form-label fw-bold">Название списка</label>
-            <input type="text" class="form-control" id="subtitle-name" name="subtitle_name"
-                   placeholder="Мои субтитры — Friends S01" required>
-        </div>
-
-        <div class="mb-4">
-            <label class="form-label fw-bold">Оформление карточки</label>
-
-            <div class="row g-3 align-items-start">
-
-                <!-- Левая часть — изображение -->
-                <div class="col-md-6">
-                    <label class="form-label small">Фоновое изображение (необязательно)</label>
-                    <input type="file"
-                           class="form-control"
-                           id="background-image"
-                           name="background_image"
-                           accept="image/*">
-
-                    <div class="form-text">
-                        Если выбрано изображение — цвет фона игнорируется
-                    </div>
-                </div>
-
-                <!-- Правая часть — выбор цвета -->
-                <div class="col-md-6">
-                    <label class="form-label small">Цвет фона</label>
-
-                    <div class="d-flex flex-wrap gap-2" id="color-picker">
-
-                        <!-- стандартные цвета -->
-                        <button type="button" class="color-swatch" data-color="#ffffff" style="background:#ffffff"></button>
-                        <button type="button" class="color-swatch" data-color="#dc3545" style="background:#dc3545"></button>
-                        <button type="button" class="color-swatch" data-color="#198754" style="background:#198754"></button>
-                        <button type="button" class="color-swatch" data-color="#0d6efd" style="background:#0d6efd"></button>
-                        <button type="button" class="color-swatch" data-color="#ffc107" style="background:#ffc107"></button>
-
-                        <!-- свой цвет -->
-                        <button type="button"
-                                class="color-swatch custom-color"
-                                id="custom-color-btn"
-                                data-bs-toggle="modal"
-                                data-bs-target="#customColorModal">
-                            +
-                        </button>
-
-                    </div>
-
-                    <!-- скрытое поле, которое реально отправляется -->
-                    <input type="hidden"
-                           name="background_color"
-                           id="background-color-input"
-                           value="#ffffff">
-                </div>
-
-            </div>
-        </div>
-
-
-    </form>
-
-    <!-- Modal: выбор своего цвета -->
-    <div class="modal fade" id="customColorModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Выберите цвет</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-          </div>
-          <div class="modal-body text-center">
-            <input type="color" id="custom-color-input" value="#ffffff">
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-            <button type="button" class="btn btn-primary" id="custom-color-ok">OK</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-    <div id="words-section" class="mt-5" style="display: none;">
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <div>
-                <button type="button" class="btn btn-primary me-2" id="save-btn-top">Сохранить список</button>
-                <button type="button" class="btn btn-outline-danger" id="clear-btn-top">Очистить всё</button>
-            </div>
-            <span class="badge bg-secondary fs-6 px-3 py-2" id="words-count-top">Слов: 0</span>
-        </div>
-
-        <div id="words-table" class="table-responsive mb-4"></div>
-
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <button type="button" class="btn btn-primary me-2" id="save-btn-bottom">Сохранить список</button>
-                <button type="button" class="btn btn-outline-danger" id="clear-btn-bottom">Очистить всё</button>
-            </div>
-            <span class="badge bg-secondary fs-6 px-3 py-2" id="words-count-bottom">Слов: 0</span>
-        </div>
-    </div>
-</div>
-
-<script>
-// Вспомогательные функции
 function handleInputChange() {
     const fileInput  = document.getElementById('subtitle-file');
     const textArea   = document.getElementById('subtitle-text');
@@ -231,7 +84,6 @@ async function autoPreview() {
         const res = await fetch("{% url 'subtitle_preview' %}", {
             method: "POST",
             body: formData,
-            credentials: "same-origin",
             headers: { 'X-CSRFToken': csrftoken }
         });
 
@@ -391,7 +243,7 @@ async function saveList() {
 // ──────────────────────────────────────────────
 // Инициализация — всё привязываем здесь
 // ──────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     console.log("Скрипт загружен и DOM готов");
 
     const fileInput = document.getElementById('subtitle-file');
@@ -399,7 +251,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const processBtn = document.getElementById('process-text-btn');
 
     if (fileInput) {
-        fileInput.addEventListener('change', function (e) {
+        fileInput.addEventListener('change', function(e) {
+            console.log("Файл выбран:", e.target.files.length > 0 ? e.target.files[0].name : "нет файла");
             if (e.target.files.length > 0) {
                 document.getElementById('subtitle-text').value = '';
                 handleInputChange();
@@ -416,42 +269,29 @@ document.addEventListener('DOMContentLoaded', function () {
         processBtn.addEventListener('click', autoPreview);
     }
 
-    document.getElementById('save-btn-top')?.addEventListener('click', saveList);
-    document.getElementById('save-btn-bottom')?.addEventListener('click', saveList);
-    document.getElementById('clear-btn-top')?.addEventListener('click', clearAll);
-    document.getElementById('clear-btn-bottom')?.addEventListener('click', clearAll);
-
-    document.getElementById("custom-color-ok")?.addEventListener("click", function () {
-        const color = document.getElementById("custom-color-input").value;
-        document.getElementById('background-color-input').value = color;
-
-        document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
-
-        const customBtn = document.getElementById('custom-color-btn');
-        customBtn.style.background = color;
-        customBtn.classList.add('active');
-
-        bootstrap.Modal.getInstance(
-            document.getElementById('customColorModal')
-        )?.hide();
-    });
+    document.getElementById('save-btn-top').addEventListener('click', saveList);
+    document.getElementById('save-btn-bottom').addEventListener('click', saveList);
+    document.getElementById('clear-btn-top').addEventListener('click', clearAll);
+    document.getElementById('clear-btn-bottom').addEventListener('click', clearAll);
 
     document.querySelectorAll('.color-swatch').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const color = this.dataset.color;
-            if (!color) return;
+    btn.addEventListener('click', function () {
+        const color = this.dataset.color;
+        if (!color) return;
 
-            document.getElementById('background-color-input').value = color;
+        // записываем цвет в hidden input
+        document.getElementById('background-color-input').value = color;
 
-            document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+        // визуально отмечаем выбранный цвет
+        document.querySelectorAll('.color-swatch').forEach(b => {
+            b.classList.remove('active');
         });
+        this.classList.add('active');
     });
-
-    // ✅ один раз, после всех биндингов
-    handleInputChange();
 });
 
+    handleInputChange();
+});
 
     // ──────────────────────────────────────────────
 // Выбор цвета фона
@@ -491,7 +331,3 @@ document.addEventListener('DOMContentLoaded', function () {
         defaultBtn.classList.add('active');
     }
 })();
-
-
-</script>
-{% endblock %}

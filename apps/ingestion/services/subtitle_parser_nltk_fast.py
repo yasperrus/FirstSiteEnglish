@@ -8,11 +8,11 @@ from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 from nltk import pos_tag
 
-from apps.lists.models import Word
-
+from apps.dictionary.models import Word
 
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words("english"))
+
 
 class SubtitleWord:
     def __init__(
@@ -23,7 +23,7 @@ class SubtitleWord:
         selected_pos: str = "",
         selected_translation: str = "",
         pos_list: list[str] | None = None,
-        translations_for_pos: dict[str, list[str]] | None = None
+        translations_for_pos: dict[str, list[str]] | None = None,
     ):
         self.name = name
         self.frequency = frequency
@@ -57,17 +57,14 @@ class ConvertTextToSubtitleWords:
 
     def _chunked(self, seq, size: int):
         for i in range(0, len(seq), size):
-            yield seq[i:i + size]
+            yield seq[i : i + size]
 
     def _get_word_frequencies(self, text: str) -> Counter:
         # Самый быстрый токенайзер для уже очищенного текста
         tokens = text.split()
 
         # Ранняя фильтрация: меньше токенов → быстрее POS
-        tokens = [
-            t for t in tokens
-            if len(t) >= self.min_len and t not in stop_words
-        ]
+        tokens = [t for t in tokens if len(t) >= self.min_len and t not in stop_words]
 
         counter = Counter()
 
@@ -113,8 +110,7 @@ class ConvertTextToSubtitleWords:
             pos_list = [p.name for p in pos_objs]
 
             main_pos_obj = next(
-                (p for p in pos_objs if p.is_main),
-                pos_objs[0] if pos_objs else None
+                (p for p in pos_objs if p.is_main), pos_objs[0] if pos_objs else None
             )
             if not main_pos_obj:
                 continue
@@ -126,9 +122,9 @@ class ConvertTextToSubtitleWords:
                 for pos in pos_objs
             }
 
-            main_translation_obj = (
-                main_pos_obj.translations.filter(is_main=True).first()
-            )
+            main_translation_obj = main_pos_obj.translations.filter(
+                is_main=True
+            ).first()
 
             if main_translation_obj:
                 selected_translation = main_translation_obj.translation

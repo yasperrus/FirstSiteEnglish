@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.db import models
 
+
 def subtitle_list_image_path(instance, filename):
     return f"images/lists/{instance.owner.username}/{filename}"
+
 
 class SubtitleList(models.Model):
     name = models.CharField(max_length=255, blank=True, default="")
@@ -42,7 +44,7 @@ class SubtitleList(models.Model):
     )
 
     words = models.ManyToManyField(
-        "Word",
+        "dictionary.Word",
         through="SubtitleListWord",
         related_name="subtitle_lists",
     )
@@ -50,44 +52,23 @@ class SubtitleList(models.Model):
     def __str__(self):
         return self.name
 
-class SubtitleListLike(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="subtitle_list_likes"
-    )
-    subtitle_list = models.ForeignKey(
-        SubtitleList,
-        on_delete=models.CASCADE,
-        related_name="likes"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ("user", "subtitle_list")
-
 
 class UserSubtitleList(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
-    )
-    subtitle_list = models.ForeignKey(
-        SubtitleList,
-        on_delete=models.CASCADE
-    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    subtitle_list = models.ForeignKey(SubtitleList, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ("user", "subtitle_list")
+
 
 class SubtitleListWord(models.Model):
     subtitle_list = models.ForeignKey(
-        SubtitleList,
+        "lists.SubtitleList",
         on_delete=models.CASCADE,
         related_name="word_links",
     )
     word = models.ForeignKey(
-        "Word",
+        "dictionary.Word",
         on_delete=models.CASCADE,
         related_name="subtitle_links",
     )
@@ -95,57 +76,3 @@ class SubtitleListWord(models.Model):
 
     class Meta:
         unique_together = ("subtitle_list", "word")
-
-
-class KnownWord(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="known_words"
-    )
-    word = models.ForeignKey(
-        "Word",
-        on_delete=models.CASCADE,
-        related_name="known_by_users"
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ("user", "word")
-
-
-class Word(models.Model):
-    name = models.CharField(max_length=128, unique=True, db_index=True,null=True, blank=True)
-    transcription = models.CharField(max_length=128, blank=True, default="")
-
-    def __str__(self):
-        return self.name
-
-class PathOfSpeech(models.Model):
-    name = models.CharField(max_length=128)
-    is_main = models.BooleanField(default=False)
-
-    word = models.ForeignKey(
-        Word,
-        on_delete=models.CASCADE,
-        related_name="parts_of_speech",
-    )
-
-    def __str__(self):
-        return f"{self.word.name} — {self.name}"
-
-
-class Translation(models.Model):
-    translation = models.CharField(max_length=255, blank=True, default="")
-    is_main = models.BooleanField(default=False)
-
-    path_of_speech = models.ForeignKey(
-        PathOfSpeech,
-        on_delete=models.CASCADE,
-        related_name="translations",
-        null=True,  # 👈 временно
-        blank=True,
-    )
-
-    def __str__(self):
-        return self.translation

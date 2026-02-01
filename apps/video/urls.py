@@ -2,9 +2,10 @@ from django.urls import path
 
 from apps.video import views
 
-urlpatterns = [
-    # urls.py
-    path("video/<str:filename>", views.stream_video, name="stream-video"),
+app_name = "video"
 
-    path("test/", views.video_player, name="video-player")
+
+urlpatterns = [
+    path("video/<str:filename>", views.stream_video, name="stream-video"),
+    path("test/", views.video_player, name="video-player"),
 ]

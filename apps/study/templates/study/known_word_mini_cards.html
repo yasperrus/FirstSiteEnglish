@@ -31,7 +31,7 @@ document.querySelectorAll(".known-toggle").forEach(btn => {
         const wordId = btn.dataset.wordId;
         const csrftoken = getCookie("csrftoken");
 
-        const res = await fetch("{% url 'toggle_known_word' %}", {
+        const res = await fetch("{% url 'study:toggle_known_word' %}", {
             method: "POST",
             headers: {
                 "X-CSRFToken": csrftoken

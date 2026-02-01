@@ -7,8 +7,9 @@ __pycache__/
 
 # Virtual environment
 .venv/
+.venv3.12/
 venv/
-env/
+.env
 ENV/
 
 # Django
@@ -23,12 +24,13 @@ media/
 media/**
 
 helper/
-
+dump.sql
+plans.txt
 # Django migrations (если хочешь их хранить, то удаляй этот блок)
 # **Обычно миграции хранить нужно**, поэтому оставь закомментированным**
 # */migrations/
 # */migrations/**
-
+db_backup/
 # PyCharm
 .idea/
 *.iml

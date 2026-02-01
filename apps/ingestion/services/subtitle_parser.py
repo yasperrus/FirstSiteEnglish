@@ -1,17 +1,10 @@
 import re
 from collections import Counter
 from typing import List
+import spacy
+from apps.dictionary.models import Word
 
-from nltk.corpus import stopwords, wordnet
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
-from nltk import pos_tag
-
-from apps.lists.models import Word
-
-
-lemmatizer = WordNetLemmatizer()
-stop_words = set(stopwords.words("english"))
+nlp = spacy.load("en_core_web_sm", disable=["ner"])
 
 
 class SubtitleWord:
@@ -23,7 +16,7 @@ class SubtitleWord:
         selected_pos: str = "",
         selected_translation: str = "",
         pos_list: list[str] | None = None,
-        translations_for_pos: dict[str, list[str]] | None = None
+        translations_for_pos: dict[str, list[str]] | None = None,
     ):
         self.name = name
         self.frequency = frequency
@@ -56,38 +49,17 @@ class ConvertTextToSubtitleWords:
         return text.strip()
 
     def _get_word_frequencies(self, text: str) -> Counter:
-        tokens = word_tokenize(text)
-        tagged_tokens = pos_tag(tokens)
-
         words = []
-
-        for token, tag in tagged_tokens:
-            if token in stop_words:
-                continue
-            if len(token) < self.min_len:
-                continue
-
-            wn_pos = self._map_pos(tag)
-            if not wn_pos:
-                continue
-
-            lemma = lemmatizer.lemmatize(token, wn_pos)
-
-            words.append(lemma.lower())
-
+        for doc in nlp.pipe([text], batch_size=128, n_process=4):
+            for token in doc:
+                if token.is_stop or token.is_punct or token.is_space:
+                    continue
+                if len(token.lemma_) < self.min_len:
+                    continue
+                if self.keep_pos and token.pos_.upper() not in self.keep_pos:
+                    continue
+                words.append(token.lemma_.lower())
         return Counter(words)
-
-    def _map_pos(self, nltk_pos: str) -> str | None:
-        """
-        NLTK POS → WordNet POS
-        """
-        if nltk_pos.startswith("N") and "NOUN" in self.keep_pos:
-            return wordnet.NOUN
-        if nltk_pos.startswith("V") and "VERB" in self.keep_pos:
-            return wordnet.VERB
-        if nltk_pos.startswith("J") and "ADJ" in self.keep_pos:
-            return wordnet.ADJ
-        return None
 
     def _map_existing_words(self, word_counter: Counter) -> List[SubtitleWord]:
         subtitle_words = []
@@ -101,31 +73,33 @@ class ConvertTextToSubtitleWords:
             if frequency == 0:
                 continue
 
+            # список частей речи
             pos_objs = list(word.parts_of_speech.all())
             pos_list = [p.name for p in pos_objs]
 
+            # определяем главную часть речи
             main_pos_obj = next(
-                (p for p in pos_objs if p.is_main),
-                pos_objs[0] if pos_objs else None
+                (p for p in pos_objs if p.is_main), pos_objs[0] if pos_objs else None
             )
             if not main_pos_obj:
                 continue
-
             selected_pos = main_pos_obj.name
 
-            translations_for_pos = {
-                pos.name: [t.translation for t in pos.translations.all()]
-                for pos in pos_objs
-            }
+            # словарь {POS: [translations]}
+            translations_for_pos = {}
+            for pos in pos_objs:
+                translations = pos.translations.all()
+                translations_for_pos[pos.name] = [t.translation for t in translations]
 
-            main_translation_obj = (
-                main_pos_obj.translations.filter(is_main=True).first()
-            )
-
+            # определяем главный перевод для выбранной POS
+            translations_for_selected_pos = translations_for_pos.get(selected_pos, [])
+            main_translation_obj = main_pos_obj.translations.filter(
+                is_main=True
+            ).first()
             if main_translation_obj:
                 selected_translation = main_translation_obj.translation
-            elif translations_for_pos.get(selected_pos):
-                selected_translation = translations_for_pos[selected_pos][0]
+            elif translations_for_selected_pos:
+                selected_translation = translations_for_selected_pos[0]
             else:
                 selected_translation = ""
 
@@ -144,15 +118,17 @@ class ConvertTextToSubtitleWords:
         return subtitle_words
 
     def to_dict(self) -> List[dict]:
-        return [
-            {
-                "name": w.name,
-                "transcription": w.transcription,
-                "frequency": w.frequency,
-                "pos_list": w.pos_list,
-                "selected_pos": w.selected_pos,
-                "translations_for_pos": w.translations_for_pos,
-                "selected_translation": w.selected_translation,
-            }
-            for w in self.subtitle_words
-        ]
+        result = []
+        for w in self.subtitle_words:
+            result.append(
+                {
+                    "name": w.name,
+                    "transcription": w.transcription,
+                    "frequency": w.frequency,
+                    "pos_list": w.pos_list,
+                    "selected_pos": w.selected_pos,
+                    "translations_for_pos": w.translations_for_pos,
+                    "selected_translation": w.selected_translation,
+                }
+            )
+        return result

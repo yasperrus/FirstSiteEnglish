@@ -2,10 +2,6 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
 import os
-from django.http import StreamingHttpResponse, Http404
-from django.conf import settings
-
-import os
 from django.http import FileResponse, Http404
 from django.conf import settings
 
@@ -39,10 +35,14 @@ def stream_video(request, filename):
 
     return FileResponse(open(file_path, "rb"), content_type="video/mp4")
 
+
 # Create your views here.
 @login_required
 def video_player(request):
-    return render(request, "video/player.html", {
-        "subtitle_json": "/media/subtitles/test/video_name.tokens.json",
-    })
-
+    return render(
+        request,
+        "video/player.html",
+        {
+            "subtitle_json": "/media/subtitles/test/video_name.tokens.json",
+        },
+    )

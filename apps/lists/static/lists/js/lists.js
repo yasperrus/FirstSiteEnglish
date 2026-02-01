@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const listId = this.dataset.listId;
 
             try {
-                const res = await fetch(`/list/${listId}/delete/`, {
+                const res = await fetch(`/lists/${listId}/delete/`, {
                     method: "POST",
                     headers: {
                         "X-CSRFToken": csrftoken,

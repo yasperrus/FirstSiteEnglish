@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'lists/css/word_mini_cards.css' %}">
+<link rel="stylesheet" href="{% static 'study/css/word_mini_cards.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const wordId = card.dataset.wordId;
         const listId = card.dataset.listId;
 
-        fetch("{% url 'toggle_known_word' %}", {
+        fetch("{% url 'study:toggle_known_word' %}", {
             method: "POST",
             headers: {
                 "X-CSRFToken": "{{ csrf_token }}",
