@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'study/css/word_mini_cards.css' %}">
+    <link rel="stylesheet" href="{% static 'study/css/word_mini_cards.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -68,7 +68,6 @@ document.addEventListener("DOMContentLoaded", () => {
             card.classList.toggle("shadow-sm", data.known);
         });
     }
-
 
     document.querySelectorAll(".mini-card").forEach(card => {
 

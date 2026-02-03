@@ -12,5 +12,5 @@ class KnownWord(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "lists_knownword"
+        db_table = "study_usersknownwords"
         unique_together = ("user", "word")

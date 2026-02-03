@@ -8,7 +8,6 @@ def subtitle_list_image_path(instance, filename):
 
 class SubtitleList(models.Model):
     name = models.CharField(max_length=255, blank=True, default="")
-    is_open_menu = models.BooleanField(default=False)
     is_hide = models.BooleanField(default=False)
 
     is_public = models.BooleanField(default=False)
@@ -52,12 +51,18 @@ class SubtitleList(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        db_table = "lists_lists"
+
 
 class UserSubtitleList(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     subtitle_list = models.ForeignKey(SubtitleList, on_delete=models.CASCADE)
 
+    is_open_menu = models.BooleanField(default=False)
+
     class Meta:
+        db_table = "lists_userslists"
         unique_together = ("user", "subtitle_list")
 
 
@@ -75,4 +80,5 @@ class SubtitleListWord(models.Model):
     frequency = models.PositiveIntegerField(default=1)
 
     class Meta:
+        db_table = "lists_listswords"
         unique_together = ("subtitle_list", "word")

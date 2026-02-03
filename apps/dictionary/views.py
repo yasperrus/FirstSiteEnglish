@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.db.models import Prefetch
 from django.core.paginator import Paginator
 
-from apps.dictionary.models import Word, PathOfSpeech
+from apps.dictionary.models import Word, PartOfSpeech
 
 PAGE_SIZE = 100
 
@@ -22,7 +22,7 @@ def dictionary_api(request):
         .prefetch_related(
             Prefetch(
                 "parts_of_speech",
-                queryset=PathOfSpeech.objects.prefetch_related("translations"),
+                queryset=PartOfSpeech.objects.prefetch_related("translations"),
             )
         )
         .order_by("name")

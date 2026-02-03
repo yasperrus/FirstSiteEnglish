@@ -11,10 +11,10 @@ class Word(models.Model):
         return self.name
 
     class Meta:
-        db_table = "lists_word"
+        db_table = "dictionary_words"
 
 
-class PathOfSpeech(models.Model):
+class PartOfSpeech(models.Model):
     name = models.CharField(max_length=128)
     is_main = models.BooleanField(default=False)
 
@@ -28,15 +28,15 @@ class PathOfSpeech(models.Model):
         return f"{self.word.name} — {self.name}"
 
     class Meta:
-        db_table = "lists_pathofspeech"
+        db_table = "dictionary_parts_of_speech"
 
 
 class Translation(models.Model):
     translation = models.CharField(max_length=255, blank=True, default="")
     is_main = models.BooleanField(default=False)
 
-    path_of_speech = models.ForeignKey(
-        "dictionary.PathOfSpeech",
+    part_of_speech = models.ForeignKey(
+        "dictionary.PartOfSpeech",
         on_delete=models.CASCADE,
         related_name="translations",
         null=True,  # 👈 временно
@@ -47,4 +47,4 @@ class Translation(models.Model):
         return self.translation
 
     class Meta:
-        db_table = "lists_translation"
+        db_table = "dictionary_translations"

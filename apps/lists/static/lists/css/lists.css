@@ -1,0 +1,25 @@
+/* Ничего не делаем с самой карточкой */
+.list-card {
+    background-size: cover;
+    background-position: center;
+}
+
+/* Меняем ТОЛЬКО прозрачность фона Bootstrap */
+.list-card:hover .card-overlay {
+    --bs-bg-opacity: 0.75;
+}
+
+.toggle-btn i {
+    color: #000; /* черный */
+}
+
+/* Зеленый только когда checked */
+.publish-switch:checked {
+    background-color: #28a745;   /* зеленый фон */
+    border-color: #28a745;       /* зеленая рамка */
+}
+
+/* Зеленая тень при фокусе (как в Bootstrap) */
+.publish-switch:checked:focus {
+    box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+}

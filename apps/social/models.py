@@ -16,5 +16,5 @@ class SubtitleListLike(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "lists_subtitlelistlike"
+        db_table = "lists_userslistslikes"
         unique_together = ("user", "subtitle_list")

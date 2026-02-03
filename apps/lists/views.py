@@ -1,18 +1,21 @@
-from django.db.models import Exists, OuterRef, Case, When, Value, IntegerField
+import json
+
+from django.db.models import Exists, OuterRef, Case, When, Value, IntegerField, Prefetch
 from django.contrib.auth.decorators import login_required
 from django.db import models
 from django.db.models.signals import pre_save, post_delete
 from django.dispatch import receiver
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponseForbidden
 
-from apps.lists.models import SubtitleList
+from apps.lists.models import SubtitleList, UserSubtitleList
 
 from django.http import JsonResponse
 
-from ..dictionary.models import Word, PathOfSpeech, Translation
+from ..dictionary.models import Word, PartOfSpeech, Translation
 from ..social.models import SubtitleListLike
 from ..study.models import KnownWord
 
@@ -77,6 +80,7 @@ def public_lists(request):
         )
         .select_related("owner")
         .prefetch_related("likes")
+        .order_by("-modified_time")
     )
 
     if request.user.is_authenticated:
@@ -87,19 +91,61 @@ def public_lists(request):
                 )
             )
         )
+        # Получаем состояния пользователя
+        user_states = UserSubtitleList.objects.filter(user=request.user)
+        user_state_dict = {us.subtitle_list_id: us for us in user_states}
+
+        # Присваиваем is_open_menu без лишнего запроса
+        for lst in qs:
+            user_state = user_state_dict.get(lst.id)
+            lst.is_open_menu = user_state.is_open_menu if user_state else False
+
     else:
         qs = qs.annotate(
             is_liked=models.Value(False, output_field=models.BooleanField())
         )
+        for lst in qs:
+            lst.is_open_menu = False
 
-    qs = qs.order_by("-modified_time")
+    # qs = qs
 
     return render(
         request,
-        "lists/word_lists.html",
+        "lists/lists.html",
         {
             "word_lists": qs,
             "is_public_page": True,
+        },
+    )
+
+
+def my_lists(request):
+    qs = (
+        SubtitleList.objects.filter(owner=request.user)
+        .select_related("owner")
+        .order_by("-modified_time")
+    )
+
+    if request.user.is_authenticated:
+        qs = qs.annotate(
+            is_liked=Exists(
+                SubtitleListLike.objects.filter(
+                    subtitle_list=OuterRef("pk"), user=request.user
+                )
+            )
+        )
+        user_states = UserSubtitleList.objects.filter(user=request.user)
+        qs = qs.prefetch_related(Prefetch("usersubtitlelist_set", queryset=user_states))
+        for lst in qs:
+            user_state = lst.usersubtitlelist_set.first()
+            lst.is_open_menu = user_state.is_open_menu if user_state else False
+
+    return render(
+        request,
+        "lists/lists.html",
+        {
+            "word_lists": qs,
+            "is_my_lists": True,
         },
     )
 
@@ -137,6 +183,31 @@ def delete_old_image_on_change(sender, instance, **kwargs):
         old.background_image.delete(save=False)
 
 
+@csrf_exempt
+def toggle_menu(request, list_id):
+    if request.method == "POST" and request.user.is_authenticated:
+        try:
+            data = json.loads(request.body)
+            is_open = data.get("is_open_menu", False)
+
+            lst = SubtitleList.objects.get(pk=list_id)
+
+            # Получаем или создаем запись для текущего пользователя
+            user_state, _ = UserSubtitleList.objects.get_or_create(
+                user=request.user, subtitle_list=lst
+            )
+            print("Saving is_open_menu:", is_open)
+            user_state.is_open_menu = is_open
+            user_state.save()
+            print("Saved:", user_state.is_open_menu)
+
+            return JsonResponse({"success": True, "is_open_menu": is_open})
+        except SubtitleList.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Not found"}, status=404)
+
+    return JsonResponse({"success": False}, status=400)
+
+
 @login_required
 @require_POST
 def toggle_publish(request, pk):
@@ -150,28 +221,6 @@ def toggle_publish(request, pk):
     subtitle_list.save(update_fields=["is_public"])
 
     return JsonResponse({"is_public": subtitle_list.is_public})
-
-
-def my_lists(request):
-    qs = SubtitleList.objects.filter(owner=request.user)
-
-    if request.user.is_authenticated:
-        qs = qs.annotate(
-            is_liked=Exists(
-                SubtitleListLike.objects.filter(
-                    subtitle_list=OuterRef("pk"), user=request.user
-                )
-            )
-        )
-
-    return render(
-        request,
-        "lists/word_lists.html",
-        {
-            "word_lists": qs,
-            "is_my_lists": True,
-        },
-    )
 
 
 @login_required

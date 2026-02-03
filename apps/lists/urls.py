@@ -18,10 +18,11 @@ urlpatterns = [
         views.get_translations,
         name="get_translations",
     ),
+    path("lists/<int:list_id>/toggle-menu/", views.toggle_menu, name="toggle_menu"),
     path("lists/<int:pk>/toggle-publish/", views.toggle_publish, name="toggle_publish"),
     path("lists/<int:list_id>/download/", views.download_words, name="download_words"),
     path("about/", views.about, name="about"),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# if settings.DEBUG:
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -46,3 +46,8 @@ def video_player(request):
             "subtitle_json": "/media/subtitles/test/video_name.tokens.json",
         },
     )
+
+
+@login_required
+def video_test(request):
+    return render(request, "video/player_test.html")

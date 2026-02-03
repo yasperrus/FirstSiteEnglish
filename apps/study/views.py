@@ -175,7 +175,7 @@ def study_cards(request, list_id):
 
     return render(
         request,
-        "ingestion/study.html",
+        "study/study.html",
         {
             "subtitle_list": subtitle_list,
             "words_json": json.dumps(words, ensure_ascii=False),
