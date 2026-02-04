@@ -8,6 +8,7 @@ def subtitle_list_image_path(instance, filename):
 
 class SubtitleList(models.Model):
     name = models.CharField(max_length=255, blank=True, default="")
+    version = models.PositiveIntegerField(default=1)
     is_hide = models.BooleanField(default=False)
 
     is_public = models.BooleanField(default=False)
@@ -53,6 +54,24 @@ class SubtitleList(models.Model):
 
     class Meta:
         db_table = "lists_lists"
+
+
+class UserSubtitleListProgress(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="subtitle_list_progress",
+    )
+    subtitle_list = models.ForeignKey(
+        "lists.SubtitleList", on_delete=models.CASCADE, related_name="user_progress"
+    )
+    version = models.IntegerField(default=1)  # версия списка
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "study_usersubtitlelistprogress"
+        unique_together = ("user", "subtitle_list")
 
 
 class UserSubtitleList(models.Model):

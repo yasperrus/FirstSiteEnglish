@@ -17,7 +17,7 @@ from django.http import JsonResponse
 
 from ..dictionary.models import Word, PartOfSpeech, Translation
 from ..social.models import SubtitleListLike
-from ..study.models import KnownWord
+from ..study.models import UserWordProgress
 
 from tabulate import tabulate
 
@@ -243,7 +243,7 @@ def word_list_detail(request, list_id):
         word_list.words.all()
         .annotate(
             is_known=Exists(
-                KnownWord.objects.filter(user=request.user, word=OuterRef("pk"))
+                UserWordProgress.objects.filter(user=request.user, word=OuterRef("pk"))
             )
         )
         .prefetch_related("parts_of_speech__translations")

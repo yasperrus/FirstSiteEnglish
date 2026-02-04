@@ -11,7 +11,12 @@ import json
 
 from apps.dictionary.models import Word
 from apps.lists.models import SubtitleList
-from apps.study.models import KnownWord
+from apps.study.models import UserWordProgress
+from apps.study.services.word_selection import (
+    get_words_for_test,
+    ensure_user_list_progress,
+    get_words_json_for_test,
+)
 
 
 @login_required
@@ -30,7 +35,9 @@ def toggle_known_word(request):
             {"status": "error", "message": "Word not found"}, status=404
         )
 
-    known_obj, created = KnownWord.objects.get_or_create(user=request.user, word=word)
+    known_obj, created = UserWordProgress.objects.get_or_create(
+        user=request.user, word=word
+    )
 
     if not created:
         # уже было — удаляем
@@ -54,7 +61,7 @@ def word_mini_cards(request, list_id):
     known_word_ids = set()
     if request.user.is_authenticated:
         known_word_ids = set(
-            KnownWord.objects.filter(
+            UserWordProgress.objects.filter(
                 user=request.user, word__subtitle_lists=word_list
             ).values_list("word_id", flat=True)
         )
@@ -76,7 +83,9 @@ class KnownWordsView(LoginRequiredMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
-        return KnownWord.objects.filter(user=self.request.user).select_related("word")
+        return UserWordProgress.objects.filter(user=self.request.user).select_related(
+            "word"
+        )
 
 
 class ToggleKnownWordView(LoginRequiredMixin, View):
@@ -98,7 +107,7 @@ class ToggleKnownWordView(LoginRequiredMixin, View):
         if not word_list.words.filter(id=word.id).exists():
             return JsonResponse({"status": "error"}, status=403)
 
-        known_qs = KnownWord.objects.filter(user=request.user, word=word)
+        known_qs = UserWordProgress.objects.filter(user=request.user, word=word)
 
         if known_qs.exists():
             # ❌ убираем "выученное"
@@ -111,7 +120,7 @@ class ToggleKnownWordView(LoginRequiredMixin, View):
             known_state = False
         else:
             # ✅ добавляем "выученное"
-            KnownWord.objects.create(user=request.user, word=word)
+            UserWordProgress.objects.create(user=request.user, word=word)
 
             SubtitleList.objects.filter(id=word_list.id).update(
                 quantity_learned_words=F("quantity_learned_words") + 1
@@ -129,6 +138,42 @@ class ToggleKnownWordView(LoginRequiredMixin, View):
                 "quantity_learned_words": word_list.quantity_learned_words,
             }
         )
+
+
+@login_required
+def study_words_view(request, list_id):
+    """
+    Страница изучения слов.
+    JS ожидает words_json в старом формате — мы его сохраняем.
+    """
+
+    subtitle_list = get_object_or_404(
+        SubtitleList,
+        id=list_id,
+        is_hide=False,
+    )
+
+    # 1️⃣ Гарантируем прогресс и слова
+    ensure_user_list_progress(
+        user=request.user,
+        subtitle_list=subtitle_list,
+    )
+
+    # 2️⃣ Получаем слова под JS
+    words_json = get_words_json_for_test(
+        user=request.user,
+        subtitle_list=subtitle_list,
+        limit=20,
+    )
+
+    return render(
+        request,
+        "study/study.html",
+        {
+            "subtitle_list": subtitle_list,
+            "words_json": words_json,
+        },
+    )
 
 
 def study_cards(request, list_id):

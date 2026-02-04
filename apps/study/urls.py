@@ -11,5 +11,5 @@ urlpatterns = [
     ),
     path("known-words/", KnownWordsView.as_view(), name="known_words"),
     path("toggle-known-word/", ToggleKnownWordView.as_view(), name="toggle_known_word"),
-    path("<int:list_id>/", views.study_cards, name="study_cards"),
+    path("<int:list_id>/", views.study_words_view, name="study_cards"),
 ]
