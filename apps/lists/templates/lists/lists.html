@@ -2,167 +2,171 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'lists/css/lists.css' %}">
+<link rel="stylesheet" href="{% static 'lists/css/lists.css' %}">
 {% endblock %}
 
 {% block content %}
-    <div class="container mt-4">
+<div class="container mt-4">
+    <div class="row g-2">
+        {% for list in word_lists %}
+        <div class="col-md-6 col-lg-4">
 
-        <div class="row g-2">
-            {% for list in word_lists %}
-                <div class="col-md-6 col-lg-4">
+            <div class="card shadow-sm list-card
+                        {% if list.is_public %}border-easy{% endif %}"
+                 style="
+                    {% if list.background_image %}
+                        background-image: url('{{ list.background_image.url }}');
+                        background-size: cover;
+                        background-position: center;
+                    {% else %}
+                        background-color: {{ list.background_color }};
+                    {% endif %}
+                 ">
 
-                    <div class="card shadow-sm list-card
-                                {% if list.is_public %}border-success{% endif %}"
-                         style="
-                                {% if list.background_image %}
-                                    background-image: url('{{ list.background_image.url }}');
-                                    background-size: cover;
-                                    background-position: center;
-                                {% else %}
-                                    background-color: {{ list.background_color }};
-                                {% endif %}
-                               ">
+                <div class="card-body">
 
-                        <div class="card-body d-flex flex-column">
+                    <!-- ===== СЛОВА (ВЕРХ ПО ЦЕНТРУ) ===== -->
+                    <div class="text-center">
+                        <span class="card-overlay small px-2 py-1
+                                     bg-white bg-opacity-50 rounded bottom-rounded">
+                            {{ list.quantity_words }} слов
+                        </span>
+                    </div>
 
-                            <!-- ===== Заголовок: НАЗВАНИЕ + ЛАЙКИ + СТРЕЛКА ===== -->
-                            <div class="d-flex justify-content-between align-items-start">
+                    <!-- ===== ЗАГОЛОВОК + ЛАЙКИ + СТРЕЛКА ===== -->
+                    <div class="d-flex justify-content-between align-items-start">
 
-                                 <!-- Название -->
-                                <h5 class="card-title me-1">
-                                    <span class="card-overlay px-2 py-2 bg-white bg-opacity-50 rounded d-inline-block">
-                                        {{ list.name }}
-                                    </span>
-                                </h5>
+                        <!-- Название -->
+                        <h5 class="card-title me-1 mt-2 text-left flex-grow-1">
+                            <span class="card-overlay px-2 py-2
+                                         bg-white bg-opacity-50 rounded d-inline-block">
+                                {{ list.name }}
+                            </span>
+                        </h5>
 
-                                <!-- Лайки + стрелка -->
-                                <div class="d-flex align-items-center gap-1">
-                                     <!-- Лайк -->
-                                    <div class="card-overlay d-flex align-items-center gap-1 px-2 py-1
-                                                bg-white bg-opacity-50 rounded">
-                                        <button
-                                            class="btn btn-link p-0 like-btn"
-                                            data-url="{% url 'social:toggle_like' list.id %}"
-                                            data-list-id="{{ list.id }}"
-                                            {% if not list.is_public %}disabled{% endif %}
-                                        >
-                                            <i class="bi
-                                                      {% if list.is_liked %}
-                                                          bi-heart-fill text-danger
-                                                      {% else %}
-                                                          bi-heart
-                                                      {% endif %}
-                                                      fs-5">
-                                            </i>
-                                        </button>
+                        <!-- Лайки + стрелка -->
+                        <div class="d-flex align-items-center mt-2 gap-1">
 
-                                        <span class="small text-muted likes-count">
-                                            {{ list.likes.count }}
-                                        </span>
-                                    </div>
+                            <div class="card-overlay d-flex align-items-center gap-1
+                                        px-2 py-1 bg-white bg-opacity-50 rounded">
+                                <button
+                                    class="btn btn-link p-0 like-btn"
+                                    data-url="{% url 'social:toggle_like' list.id %}"
+                                    data-list-id="{{ list.id }}"
+                                    {% if not list.is_public %}disabled{% endif %}
+                                >
+                                    <i class="bi
+                                        {% if list.is_liked %}
+                                            bi-heart-fill text-danger
+                                        {% else %}
+                                            bi-heart
+                                        {% endif %}
+                                        fs-5"></i>
+                                </button>
 
-                                    <!-- СТРЕЛКА -->
-                                    <div class="card-overlay px-2 py-1 bg-white bg-opacity-50 rounded">
-                                        <!-- Стрелка -->
-                                        <button
-                                            class="btn btn-link p-0 toggle-btn"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#list-{{ list.id }}"
-                                            aria-expanded="{{ list.is_open_menu|yesno:'true,false' }}"
-                                        >
-                                            <i class="bi
-                                                {% if list.is_open_menu %}
-                                                    bi-chevron-down
-                                                {% else %}
-                                                    bi-chevron-right
-                                                {% endif %}
-                                                fs-5">
-                                            </i>
-
-                                        </button>
-                                    </div>
-                                </div>
+                                <span class="small text-muted likes-count">
+                                    {{ list.likes.count }}
+                                </span>
                             </div>
 
-                            <!-- ===== РАСКРЫВАЕМАЯ ЧАСТЬ ===== -->
-                            <div class="collapse {% if list.is_open_menu %}show{% endif %}" id="list-{{ list.id }}">
-
-                                <!-- Слов / Опубликовать -->
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-
-                                    <span class="card-overlay text-muted small px-2 py-2
-                                                 bg-white bg-opacity-50 rounded d-inline-block
-                                                ">
-                                        Слов: {{ list.quantity_words }}
-                                    </span>
-
-                                    {% if request.user == list.owner or request.user.is_staff %}
-                                        <div class="card-overlay form-check form-switch m-0
-                                                    d-flex align-items-center gap-2 px-2 py-2
-                                                    bg-white bg-opacity-50  rounded d-inline-block">
-                                            <label class="form-check-label small text-muted">
-                                                Опубликовать
-                                            </label>
-                                            <input
-                                                class="form-check-input publish-switch m-0"
-                                                type="checkbox"
-                                                role="switch"
-                                                data-list-id="{{ list.id }}"
-                                                {% if list.is_public %}checked{% endif %}
-                                            >
-                                        </div>
-                                    {% endif %}
-                                </div>
-
-                                <!-- Низ карточки -->
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-
-                                    <div class="d-flex gap-2">
-                                        <a href="{% url 'lists:word_list_detail' list.id %}"
-                                           class="btn btn-primary btn-sm">
-                                            Просмотреть
-                                        </a>
-                                        <a href="{% url 'study:word_mini_cards' list.id %}"
-                                           class="btn btn-primary btn-sm">
-                                            Открыть
-                                        </a>
-                                    </div>
-
-                                    {% if request.user == list.owner %}
-                                        <div class="btn-group">
-                                            <button
-                                                class="btn btn-light btn-sm icon-btn delete-list"
-                                                data-list-id="{{ list.id }}">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                            <button class="btn btn-light btn-sm icon-btn">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                        </div>
-                                    {% endif %}
-
-                                </div>
-
-                                <!-- Центр -->
-                                <div class="d-flex justify-content-center gap-2 mt-2">
-                                    <button class="btn btn-outline-success btn-sm bg-black bg-opacity-50 ">Лёгкий</button>
-                                    <button class="btn btn-outline-warning btn-sm bg-white bg-opacity-50 ">Средний</button>
-                                    <button class="btn btn-outline-danger btn-sm bg-black bg-opacity-50 ">Сложный</button>
-                                </div>
-
+                            <div class="card-overlay px-2 py-1
+                                        bg-white bg-opacity-50 rounded">
+                                <button
+                                    class="btn btn-link p-0 toggle-btn"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#list-{{ list.id }}"
+                                    aria-expanded="{{ list.is_open_menu|yesno:'true,false' }}"
+                                >
+                                    <i class="bi
+                                        {% if list.is_open_menu %}
+                                            bi-chevron-down
+                                        {% else %}
+                                            bi-chevron-right
+                                        {% endif %}
+                                        fs-5"></i>
+                                </button>
                             </div>
-
                         </div>
                     </div>
-                </div>
-            {% empty %}
-                <p class="text-muted">Списков пока нет</p>
-            {% endfor %}
-        </div>
-    </div>
-{% endblock %}
 
+                    <!-- ===== РАСКРЫВАЕМАЯ ЧАСТЬ ===== -->
+                    <div class="collapse {% if list.is_open_menu %}show{% endif %}"
+                         id="list-{{ list.id }}">
+
+                        <!-- Низ карточки (кнопки просмотра / редактирования) -->
+                        <div class="d-flex justify-content-between align-items-center mt-2 mb-2">
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'lists:word_list_detail' list.id %}"
+                                   class="btn btn-light btn-sm icon-btn">
+                                    <i class="bi bi-list-ul"></i>
+                                </a>
+                                <a href="{% url 'study:word_mini_cards' list.id %}"
+                                   class="btn btn-light btn-sm icon-btn">
+                                    <i class="bi bi-card-checklist"></i>
+                                </a>
+                            </div>
+                            {% if request.user == list.owner %}
+                            <div class="d-flex gap-1">
+                                <button
+                                    class="btn btn-light btn-sm icon-btn delete-list"
+                                    data-list-id="{{ list.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                <button
+                                    class="btn btn-light btn-sm icon-btn">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- ===== ТЕСТЫ ===== -->
+                        <div class="tests-section d-flex align-items-center mb-2 gap-1">
+                            <span class="fw-medium small text-muted me-1">Тесты:</span>
+
+                            <button class="btn btn-light btn-sm icon-btn test-btn">
+                                <img src="{% static 'lists/icons/healthicons--i-training-class.svg' %}" alt="">
+                            </button>
+
+                            <button class="btn btn-light btn-sm icon-btn test-btn">
+                                <img src="{% static 'lists/icons/book-check.svg' %}" alt="">
+                            </button>
+
+                            <button class="btn btn-light btn-sm icon-btn test-btn">
+                                <img src="{% static 'lists/icons/clipboard-check.svg' %}" alt="">
+                            </button>
+                        </div>
+
+                    </div>
+                    <!-- Опубликовать -->
+                    {% if request.user == list.owner or request.user.is_staff %}
+                    <div class="d-flex justify-content-center  publish-row">
+
+                        <div class="card-overlay form-check form-switch m-0
+                                    d-flex align-items-center gap-1
+                                    px-2 py-1 bg-white bg-opacity-50 rounded top-rounded">
+                            <label class="form-check-label small text-muted">
+                                Опубликовать
+                            </label>
+                            <input
+                                class="form-check-input publish-switch m-0"
+                                type="checkbox"
+                                data-list-id="{{ list.id }}"
+                                {% if list.is_public %}checked{% endif %}
+                            >
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">Списков пока нет</p>
+        {% endfor %}
+    </div>
+</div>
 {% block extra_js %}
     <script src="{% static 'lists/js/lists.js' %}"></script>
 {% endblock %}
+{% endblock %}
+

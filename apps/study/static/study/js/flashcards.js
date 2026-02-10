@@ -19,7 +19,7 @@ const answerEl = document.getElementById("answer");
 const feedbackEl = document.getElementById("feedback");
 
 const currentIndexEl = document.getElementById("current-index");
-const totalWordsEl = document.querySelector(".total-words"); // ✅ ИСПРАВЛЕНО
+const totalWordsEls = document.querySelectorAll(".total-words"); // ✅ ИСПРАВЛЕНО
 const correctCountEl = document.getElementById("correct-count");
 const timerEl = document.getElementById("timer");
 
@@ -31,7 +31,7 @@ const finishBtn = document.getElementById("finish");
 /* =======================
    INIT
 ======================= */
-totalWordsEl.textContent = WORDS.length;
+totalWordsEls.forEach(el => el.textContent = WORDS.length);
 
 // служебные поля
 WORDS.forEach(w => {
@@ -103,7 +103,7 @@ function renderCard() {
   card.classList.toggle("flipped", w.done);
 
   currentIndexEl.textContent = index + 1;
-  totalWordsEl.textContent = WORDS.length;
+  totalWordsEls.forEach(el => el.textContent = WORDS.length);
 }
 
 /* =======================

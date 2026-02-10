@@ -68,6 +68,10 @@ def about(request):
     return render(request, "lists/about.html")
 
 
+def gradient_text(request):
+    return render(request, "lists/gradient_text.html")
+
+
 def word_list_edit(request, list_id):
     return ""
 

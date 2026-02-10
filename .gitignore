@@ -16,7 +16,7 @@ ENV/
 *.log
 *.pot
 *.py[cod]
-db.sqlite3
+db_backup/db_old_07_02.sqlite3
 db.sqlite3-journal
 
 # Media files
@@ -24,7 +24,7 @@ media/
 media/**
 
 helper/
-dump.sql
+db_backup/dump.sql
 plans.txt
 # Django migrations (если хочешь их хранить, то удаляй этот блок)
 # **Обычно миграции хранить нужно**, поэтому оставь закомментированным**

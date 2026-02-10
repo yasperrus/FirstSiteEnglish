@@ -9,7 +9,7 @@ class UserWordProgress(models.Model):
     word = models.ForeignKey(
         "dictionary.Word", on_delete=models.CASCADE, related_name="progress_by_users"
     )
-
+    is_learning = models.BooleanField(default=False)
     is_learned = models.BooleanField(default=False)
     score = models.IntegerField(default=0)
     level_learned = models.IntegerField(default=0)

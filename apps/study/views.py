@@ -4,6 +4,7 @@ from django.db import transaction
 from django.db.models import F
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
 from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView
@@ -18,36 +19,89 @@ from apps.study.services.word_selection import (
     get_words_json_for_test,
 )
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, render
+from django.db.models import Prefetch
+
 
 @login_required
-@require_POST
-def toggle_known_word(request):
-    word_id = request.POST.get("word_id")
-    if not word_id:
-        return JsonResponse(
-            {"status": "error", "message": "word_id required"}, status=400
-        )
+def word_mini_cards(request, list_id):
+    word_list = get_object_or_404(SubtitleList, id=list_id)
 
-    try:
-        word = Word.objects.get(id=word_id)
-    except Word.DoesNotExist:
-        return JsonResponse(
-            {"status": "error", "message": "Word not found"}, status=404
-        )
+    words = word_list.words.all()
 
-    known_obj, created = UserWordProgress.objects.get_or_create(
-        user=request.user, word=word
+    progress_qs = UserWordProgress.objects.filter(
+        user=request.user,
+        word__in=words,
     )
 
-    if not created:
-        # уже было — удаляем
-        known_obj.delete()
-        return JsonResponse({"status": "ok", "known": False})
+    progress_map = {p.word_id: p for p in progress_qs}
 
-    return JsonResponse({"status": "ok", "known": True})
+    return render(
+        request,
+        "study/word_mini_cards.html",
+        {
+            "word_list": word_list,
+            "words": words,
+            "progress_map": progress_map,
+        },
+    )
 
 
-def word_mini_cards(request, list_id):
+from django.views import View
+from django.http import JsonResponse
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
+from django.shortcuts import get_object_or_404
+from django.db import transaction
+
+
+@method_decorator(require_POST, name="dispatch")
+class UpdateWordStateView(LoginRequiredMixin, View):
+
+    def post(self, request, *args, **kwargs):
+        word_id = request.POST.get("word_id")
+        mode = request.POST.get("mode")  # learning | learned
+
+        if not word_id or mode not in ("learning", "learned"):
+            return JsonResponse(
+                {"status": "error", "message": "invalid params"},
+                status=400,
+            )
+
+        word = get_object_or_404(Word, id=word_id)
+
+        with transaction.atomic():
+            progress, _ = UserWordProgress.objects.get_or_create(
+                user=request.user,
+                word=word,
+            )
+
+            if mode == "learning":
+                progress.is_learning = not progress.is_learning
+                if progress.is_learning:
+                    progress.is_learned = False
+
+            elif mode == "learned":
+                progress.is_learned = not progress.is_learned
+                if progress.is_learned:
+                    progress.is_learning = False
+
+            progress.save(update_fields=["is_learning", "is_learned"])
+
+        return JsonResponse(
+            {
+                "status": "ok",
+                "state": {
+                    "is_learning": progress.is_learning,
+                    "is_learned": progress.is_learned,
+                },
+            }
+        )
+
+
+def word_mini_cards_(request, list_id):
     word_list = get_object_or_404(SubtitleList, id=list_id)
 
     if not word_list.is_public:
@@ -83,9 +137,9 @@ class KnownWordsView(LoginRequiredMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
-        return UserWordProgress.objects.filter(user=self.request.user).select_related(
-            "word"
-        )
+        return UserWordProgress.objects.filter(
+            user=self.request.user, is_learned=True
+        ).select_related("word")
 
 
 class ToggleKnownWordView(LoginRequiredMixin, View):
@@ -113,29 +167,14 @@ class ToggleKnownWordView(LoginRequiredMixin, View):
             # ❌ убираем "выученное"
             known_qs.delete()
 
-            SubtitleList.objects.filter(id=word_list.id).update(
-                quantity_learned_words=F("quantity_learned_words") - 1
-            )
-
             known_state = False
         else:
             # ✅ добавляем "выученное"
             UserWordProgress.objects.create(user=request.user, word=word)
 
-            SubtitleList.objects.filter(id=word_list.id).update(
-                quantity_learned_words=F("quantity_learned_words") + 1
-            )
-
-            known_state = True
-
-        # получаем актуальное значение (уже обновлённое)
-        word_list.refresh_from_db(fields=["quantity_learned_words"])
-
         return JsonResponse(
             {
                 "status": "ok",
-                "known": known_state,
-                "quantity_learned_words": word_list.quantity_learned_words,
             }
         )
 
@@ -174,6 +213,199 @@ def study_words_view(request, list_id):
             "words_json": words_json,
         },
     )
+
+
+@login_required
+def study_easy_3_words_view(request, list_id):
+    """
+    Страница изучения слов.
+    JS ожидает words_json в старом формате — мы его сохраняем.
+    """
+
+    subtitle_list = get_object_or_404(
+        SubtitleList,
+        id=list_id,
+        is_hide=False,
+    )
+
+    # 1️⃣ Гарантируем прогресс и слова
+    ensure_user_list_progress(
+        user=request.user,
+        subtitle_list=subtitle_list,
+    )
+
+    # 2️⃣ Получаем слова под JS
+    words_json = get_words_json_for_test(
+        user=request.user,
+        subtitle_list=subtitle_list,
+        limit=20,
+        with_all_translations=False,
+        with_distractors=True,
+    )
+
+    return render(
+        request,
+        "study/study_easy_3.html",
+        {
+            "subtitle_list": subtitle_list,
+            "words_json": words_json,
+        },
+    )
+
+
+@login_required
+def study_puzzle_words_view(request, list_id):
+    """
+    Страница изучения слов.
+    JS ожидает words_json в старом формате — мы его сохраняем.
+    """
+
+    subtitle_list = get_object_or_404(
+        SubtitleList,
+        id=list_id,
+        is_hide=False,
+    )
+
+    # 1️⃣ Гарантируем прогресс и слова
+    ensure_user_list_progress(
+        user=request.user,
+        subtitle_list=subtitle_list,
+    )
+
+    # 2️⃣ Получаем слова под JS
+    words_json = get_words_json_for_test(
+        user=request.user,
+        subtitle_list=subtitle_list,
+        limit=20,
+        with_all_translations=False,
+        with_distractors=False,
+    )
+
+    return render(
+        request,
+        "study/study_puzzle_2.html",
+        {
+            "subtitle_list": subtitle_list,
+            "words_json": words_json,
+        },
+    )
+
+
+@login_required
+def study_easy_words_view(request, list_id):
+    """
+    Страница изучения слов.
+    JS ожидает words_json в старом формате — мы его сохраняем.
+    """
+
+    subtitle_list = get_object_or_404(
+        SubtitleList,
+        id=list_id,
+        is_hide=False,
+    )
+
+    # 1️⃣ Гарантируем прогресс и слова
+    ensure_user_list_progress(
+        user=request.user,
+        subtitle_list=subtitle_list,
+    )
+
+    # 2️⃣ Получаем слова под JS
+    words_json = get_words_json_for_test(
+        user=request.user,
+        subtitle_list=subtitle_list,
+        limit=20,
+        with_all_translations=False,
+        with_distractors=True,
+    )
+
+    return render(
+        request,
+        "study/study_easy.html",
+        {
+            "subtitle_list": subtitle_list,
+            "words_json": words_json,
+        },
+    )
+
+
+@login_required
+def study_easy_2_words_view(request, list_id):
+    subtitle_list = get_object_or_404(
+        SubtitleList,
+        id=list_id,
+        is_hide=False,
+    )
+
+    # 1️⃣ Гарантируем прогресс и слова
+    ensure_user_list_progress(
+        user=request.user,
+        subtitle_list=subtitle_list,
+    )
+
+    # 2️⃣ Получаем слова под JS
+    words_json = get_words_json_for_test(
+        user=request.user,
+        subtitle_list=subtitle_list,
+        limit=20,
+    )
+
+    return render(
+        request,
+        "study/study_easy_2.html",
+        {
+            "subtitle_list": subtitle_list,
+            "words_json": words_json,
+        },
+    )
+
+
+@login_required
+@require_POST
+def submit_answer(request):
+    """
+    Получает результат одного клика по варианту ответа.
+    НЕ сохраняет варианты ответов.
+    """
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    word_name = data.get("word")
+    is_correct = data.get("is_correct")
+
+    if word_name is None or is_correct is None:
+        return JsonResponse({"error": "Missing data"}, status=400)
+
+    word = get_object_or_404(Word, name=word_name)
+
+    progress = get_object_or_404(
+        UserWordProgress,
+        user=request.user,
+        word=word,
+    )
+
+    # 🔄 обновляем дату просмотра всегда
+    progress.last_reviewed_at = timezone.now()
+
+    # 🎯 логика score
+    if is_correct:
+        if progress.score < 4:
+            progress.score += 1
+    else:
+        progress.score = max(0, progress.score - 1)
+
+    progress.save(
+        update_fields=[
+            "score",
+            "last_reviewed_at",
+            "updated_at",
+        ]
+    )
+
+    return JsonResponse({"ok": True, "score": progress.score})
 
 
 def study_cards(request, list_id):

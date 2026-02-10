@@ -1,37 +1,41 @@
 {% extends "base.html" %}
 {% load static %}
+{% load dict_extras %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'study/css/word_mini_cards.css' %}">
+<link rel="stylesheet" href="{% static 'study/css/word_mini_cards.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">Мини карточки: {{ word_list.name }}</h2>
+    <h2 class="mb-4">{{ word_list.name }}</h2>
 
     <div class="row g-3">
         {% for word in words %}
+        {% with p=progress_map|get_item:word.id %}
         <div class="col-12 col-md-6 col-lg-4">
             <div class="mini-card d-flex align-items-center justify-content-between
-                 {% if word.id in known_word_ids %}border border-success shadow-sm{% endif %}"
+                {% if p and p.is_learned %}border border-success{% endif %}
+                {% if p and p.is_learning %}border border-danger{% endif %}
+            "
+            data-word-id="{{ word.id }}"
+            data-learning="{{ p.is_learning|default_if_none:'false' }}"
+            data-learned="{{ p.is_learned|default_if_none:'false' }}"
+            >
 
-                 data-word-id="{{ word.id }}"
-                 data-list-id="{{ word_list.id }}"
-                 data-known="{% if word.id in known_word_ids %}true{% else %}false{% endif %}">
-
-                <button class="btn btn-sm btn-outline-primary plus-btn">+</button>
+                <button class="btn btn-sm btn-outline-danger learn-btn">+</button>
 
                 <div class="word-text flex-grow-1 text-center">
                     {{ word.name }}
                 </div>
 
-                <button class="btn btn-sm btn-outline-secondary circle-btn">
-                    <span class="circle">
-                        <i class="bi bi-check-lg d-none"></i>
-                    </span>
+                <button class="btn btn-sm btn-outline-success learned-btn">
+                    <i class="bi bi-check-lg"></i>
                 </button>
+
             </div>
         </div>
+        {% endwith %}
         {% endfor %}
     </div>
 </div>
@@ -39,46 +43,38 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-    function toggleKnown(card) {
-        const wordId = card.dataset.wordId;
-        const listId = card.dataset.listId;
+    function applyState(card, state) {
+        card.dataset.learning = state.is_learning;
+        card.dataset.learned = state.is_learned;
 
-        fetch("{% url 'study:toggle_known_word' %}", {
+        card.classList.toggle("border-danger", state.is_learning);
+        card.classList.toggle("border-success", state.is_learned);
+    }
+
+    function toggle(card, mode) {
+        fetch("{% url 'study:update_word_state' %}", {
             method: "POST",
             headers: {
                 "X-CSRFToken": "{{ csrf_token }}",
-                "Content-Type": "application/x-www-form-urlencoded"
+                "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: `word_id=${wordId}&list_id=${listId}`
+            body: `word_id=${card.dataset.wordId}&mode=${mode}`,
         })
-        .then(res => res.json())
+        .then(r => r.json())
         .then(data => {
             if (data.status !== "ok") return;
-
-            card.dataset.known = data.known.toString();
-
-            const icon = card.querySelector(".circle i");
-            icon.classList.toggle("d-none", !data.known);
-
-            // при желании можно обновлять счётчик на странице
-            // document.querySelector("#learned-count").innerText = data.quantity_learned_words;
-            // 🔥 ВИЗУАЛЬНОЕ ВЫДЕЛЕНИЕ
-            card.classList.toggle("border", data.known);
-            card.classList.toggle("border-success", data.known);
-            card.classList.toggle("shadow-sm", data.known);
+            applyState(card, data.state);
         });
     }
 
     document.querySelectorAll(".mini-card").forEach(card => {
 
-        // показываем галочку если известно
-        if (card.dataset.known === "true") {
-            card.querySelector(".circle i").classList.remove("d-none");
-        }
+        card.querySelector(".learn-btn")
+            .addEventListener("click", () => toggle(card, "learning"));
 
-        card.querySelector(".word-text").addEventListener("click", () => toggleKnown(card));
-        card.querySelector(".plus-btn").addEventListener("click", () => toggleKnown(card));
-        card.querySelector(".circle-btn").addEventListener("click", () => toggleKnown(card));
+        card.querySelector(".learned-btn")
+            .addEventListener("click", () => toggle(card, "learned"));
+
     });
 
 });

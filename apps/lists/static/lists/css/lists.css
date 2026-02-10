@@ -1,7 +1,35 @@
 /* Ничего не делаем с самой карточкой */
+
+
+.list-card .card-body > .text-center:first-child {
+    position: absolute;
+    top: 0px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.85rem;   /* по вкусу, сделать компактнее */
+}
+
+
 .list-card {
+    display: flex;
+    flex-direction: column;
     background-size: cover;
     background-position: center;
+}
+.list-card .card-body {
+    flex: 0 0 auto;
+    padding-bottom: 0;/* НЕ растягиваться */
+}
+
+/* Только низ закруглён */
+.bottom-rounded {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+}
+/* Только верх закруглён */
+.top-rounded {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
 }
 
 /* Меняем ТОЛЬКО прозрачность фона Bootstrap */
@@ -12,7 +40,18 @@
 .toggle-btn i {
     color: #000; /* черный */
 }
-
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.test-btn img {
+    width: 24px;          /* уменьшить иконку до масштаба остальных */
+    height: 24px;
+}
 /* Зеленый только когда checked */
 .publish-switch:checked {
     background-color: #28a745;   /* зеленый фон */
@@ -22,4 +61,8 @@
 /* Зеленая тень при фокусе (как в Bootstrap) */
 .publish-switch:checked:focus {
     box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+}
+.publish-row {
+    margin: 0;
+    padding-top: 0rem; /* или 0 */
 }

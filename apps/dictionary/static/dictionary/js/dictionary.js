@@ -26,15 +26,31 @@ async function loadWords(reset=false) {
     data.results.forEach(word => {
         const div = document.createElement("div");
         div.className = "card mb-2 p-3";
+
         div.innerHTML = `
             <strong>${word.name}</strong>
             <span class="text-muted">${word.transcription || ""}</span>
+
             <div>
-                ${word.parts_of_speech.map(pos =>
-                    `<div><em>${pos.name}</em>: ${pos.translations.join(", ")}</div>`
-                ).join("")}
+                ${word.parts_of_speech.map(pos => `
+                    <div>
+                        ${
+                            pos.is_main
+                                ? `<u><em>${pos.name}</em></u>`
+                                : `<em>${pos.name}</em>`
+                        }:
+                        ${
+                            pos.translations.map(tr =>
+                                tr.is_main
+                                    ? `<u><b>${tr.text}</b></u>`
+                                    : tr.text
+                            ).join(", ")
+                        }
+                    </div>
+                `).join("")}
             </div>
         `;
+
         container.appendChild(div);
     });
 

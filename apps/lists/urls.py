@@ -9,6 +9,7 @@ app_name = "lists"
 
 urlpatterns = [
     path("", views.public_lists, name="public_lists"),
+    path("test", views.gradient_text, name="gradient_text"),
     path("my-lists/", views.my_lists, name="my_lists"),
     path("lists/<int:list_id>/delete/", views.delete_list, name="delete_list"),
     path("lists/edit/<int:list_id>/", views.word_list_edit, name="word_list_edit"),

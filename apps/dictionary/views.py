@@ -59,7 +59,14 @@ def dictionary_api(request):
                 "parts_of_speech": [
                     {
                         "name": pos.name,
-                        "translations": [t.translation for t in pos.translations.all()],
+                        "is_main": pos.is_main,  # ← ВАЖНО
+                        "translations": [
+                            {
+                                "text": t.translation,
+                                "is_main": t.is_main,  # ← ВАЖНО
+                            }
+                            for t in pos.translations.all()
+                        ],
                     }
                     for pos in word.parts_of_speech.all()
                 ],
