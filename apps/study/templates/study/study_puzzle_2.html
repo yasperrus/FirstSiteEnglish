@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'study/css/study_puzzle_2.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid vh-100 d-flex justify-content-center align-items-center">
+    <div class="row w-100 align-items-center">
+
+        <!-- Левая стрелка -->
+        <div class="col-auto d-flex align-items-center justify-content-end">
+            <button class="btn btn-link fs-1 nav-arrow left" onclick="prevWord()">
+                <i class="bi bi-chevron-compact-left"></i>
+            </button>
+        </div>
+
+        <!-- Центральная карточка -->
+        <div class="col d-flex flex-column align-items-center justify-content-center">
+            <div class="card text-center puzzle-card p-4">
+
+                <!-- Перевод -->
+                <div class="puzzle-translate mb-3" id="puzzle-translate">Перевод</div>
+
+                <!-- Пустые слоты -->
+                <div class="d-flex justify-content-center flex-wrap gap-2 mb-2 puzzle-slots" id="puzzle-slots">
+                    <!-- JS заполняет span для каждого символа -->
+                </div>
+
+                <!-- Буквы для выбора -->
+                <div class="d-flex justify-content-center flex-wrap gap-2 mb-3 puzzle-letters" id="puzzle-letters">
+                    <!-- JS заполняет варианты букв -->
+                </div>
+
+                <!-- Прогресс -->
+                <div class="puzzle-progress mb-2" id="puzzle-progress">1 / 20</div>
+
+                <!-- Очистить -->
+                <button class="btn btn-secondary clear-btn mb-2" id="clear-btn">Очистить</button>
+            </div>
+        </div>
+
+        <!-- Правая стрелка -->
+        <div class="col-auto d-flex align-items-center justify-content-start">
+            <button class="btn btn-link fs-1 nav-arrow right" onclick="nextWord()">
+                <i class="bi bi-chevron-compact-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Боковая панель -->
+<div class="position-fixed top-50 end-0 translate-middle-y d-flex flex-column gap-3 puzzle-side-panel">
+    <div class="card p-3 text-center side-card">
+        <span>Таймер</span>
+        <strong id="timer">00:00</strong>
+    </div>
+    <div class="card p-3 text-center side-card">
+        <span>Правильных</span>
+        <strong id="score">0 / 20</strong>
+    </div>
+    <button class="btn btn-danger finish-btn" onclick="finishStudy()">Завершить</button>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+    window.STUDY_WORDS = {{ words_json|safe }};
+</script>
+<script src="{% static 'study/js/study_puzzle_2.js' %}"></script>
+{% endblock %}

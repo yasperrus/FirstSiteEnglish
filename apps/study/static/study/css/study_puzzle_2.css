@@ -1,0 +1,127 @@
+/* Центральная карточка */
+.puzzle-card {
+    width: 380px;            /* средний размер */
+    min-width: 380px;
+    max-width: 90vw;         /* адаптация только при длинных словах */
+    padding: 32px 24px;
+    text-align: center;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: width 0.3s ease;
+}
+
+/* Перевод слова */
+.puzzle-translate {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    word-wrap: break-word;
+}
+
+/* Слоты для букв */
+.puzzle-slots,
+.puzzle-letters {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: nowrap; /* одна линия */
+    margin-bottom: 12px;
+}
+
+.puzzle-slots span,
+.puzzle-letters span {
+    flex: 0 1 auto;
+    width: clamp(36px, 4vw, 48px);
+    height: clamp(36px, 4vw, 48px);
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: clamp(14px, 3vw, 20px);
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.puzzle-slots span.correct {
+    border-color: #2ecc71;
+    background: #eafaf1;
+    color: #2ecc71;
+}
+
+.puzzle-letters span.used {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* Прогресс */
+.puzzle-progress {
+    font-size: 14px;
+    color: #777;
+    margin-bottom: 8px;
+}
+
+/* Очистить */
+.clear-btn {
+    align-self: center;
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: none;
+    background: #eee;
+    cursor: pointer;
+}
+
+/* Стрелки */
+.nav-arrow {
+    background: none;
+    border: none;
+    font-size: 36px;
+    cursor: pointer;
+    color: #555;
+}
+
+/* Боковая панель */
+.puzzle-side-panel {
+    position: fixed;
+    right: 40px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.side-card {
+    background: #fff;
+    padding: 16px;
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    text-align: center;
+}
+
+.side-card span {
+    display: block;
+    font-size: 13px;
+    color: #777;
+}
+
+.side-card strong {
+    display: block;
+    font-size: 22px;
+    margin-top: 4px;
+}
+
+.finish-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: #ff5c5c;
+    color: #fff;
+    cursor: pointer;
+}
