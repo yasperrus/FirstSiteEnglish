@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.views import View
 
 from apps.dictionary.models import Word
-from apps.ingestion.services.subtitle_parser_nltk_fast import ConvertTextToSubtitleWords
+from apps.ingestion.services.subtitle_parser import ConvertTextToSubtitleWords
 from apps.lists.models import SubtitleList, UserSubtitleList, SubtitleListWord
 
 
