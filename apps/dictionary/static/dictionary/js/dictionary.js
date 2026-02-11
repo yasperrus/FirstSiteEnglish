@@ -28,8 +28,12 @@ async function loadWords(reset=false) {
         div.className = "card mb-2 p-3";
 
         div.innerHTML = `
-            <strong>${word.name}</strong>
-            <span class="text-muted">${word.transcription || ""}</span>
+            <div class="d-flex align-items-baseline gap-2">
+        <span class="fw-bold fs-5">${word.name}</span>
+        ${word.transcription ?
+            `<span class="text-muted small opacity-75">${word.transcription}</span>`
+            : ""}
+            </div>
 
             <div>
                 ${word.parts_of_speech.map(pos => `

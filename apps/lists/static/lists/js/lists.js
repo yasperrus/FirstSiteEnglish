@@ -59,6 +59,47 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    document.querySelectorAll(".progress-ring-wrapper").forEach(el => {
+        el.addEventListener("click", async () => {
+            const listId = el.dataset.listId;
+
+            const res = await fetch(`/study/${listId}/update-progress/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+            });
+
+            const data = await res.json();
+
+            el.style.setProperty("--percent", data.percent);
+            el.querySelector(".progress-ring").classList.remove("empty");
+            el.querySelector(".progress-ring-label").textContent = `${data.percent}%`;
+
+            const counter = document.querySelector(
+                `.learned-counter[data-list-id="${listId}"]`
+            );
+
+            if (counter) {
+                let learnedSpan = counter.querySelector(".learned-count");
+
+                // если раньше был NULL — создаём span
+                if (!learnedSpan) {
+                    counter.innerHTML = `
+                        <span class="learned-count">
+                            ${data.learned} выучено
+                        </span>
+                    `;
+                } else {
+                    learnedSpan.textContent = `${data.learned} выучено`;
+                }
+            }
+
+        });
+    });
+
+
+
     /* ===== Лайки ===== */
     document.querySelectorAll(".like-btn").forEach(btn => {
         btn.addEventListener("click", function () {

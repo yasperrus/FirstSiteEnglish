@@ -1,9 +1,14 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
+from django.db.models import Case, When, IntegerField, Value
+from django.db.models.functions import Lower
 from django.db import transaction
 from django.db.models import F
-from django.http import HttpResponseForbidden, JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
+from django.shortcuts import render, get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views import View
 from django.views.decorators.http import require_POST
@@ -13,6 +18,7 @@ import json
 from apps.dictionary.models import Word
 from apps.lists.models import SubtitleList
 from apps.study.models import UserWordProgress
+from apps.study.services.progress import update_subtitle_list_progress
 from apps.study.services.word_selection import (
     get_words_for_test,
     ensure_user_list_progress,
@@ -55,6 +61,27 @@ from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+
+
+@login_required
+def update_progress(request, pk):
+    subtitle_list = SubtitleList.objects.get(pk=pk)
+
+    learned_count = update_subtitle_list_progress(
+        user=request.user,
+        subtitle_list=subtitle_list,
+    )
+
+    total = subtitle_list.quantity_words
+    percent = int((learned_count / total) * 100) if total else 0
+
+    return JsonResponse(
+        {
+            "learned": learned_count,
+            "total": total,
+            "percent": percent,
+        }
+    )
 
 
 @method_decorator(require_POST, name="dispatch")
@@ -131,15 +158,171 @@ def word_mini_cards_(request, list_id):
     )
 
 
+# class KnownWordsView(LoginRequiredMixin, ListView):
+#     template_name = "study/known_word_mini_cards.html"
+#     context_object_name = "known_words"
+#     paginate_by = 30
+#
+#     def get_queryset(self):
+#         return UserWordProgress.objects.filter(
+#             user=self.request.user, is_learned=True
+#         ).select_related("word")
 class KnownWordsView(LoginRequiredMixin, ListView):
     template_name = "study/known_word_mini_cards.html"
     context_object_name = "known_words"
     paginate_by = 30
 
     def get_queryset(self):
-        return UserWordProgress.objects.filter(
+        qs = UserWordProgress.objects.filter(
             user=self.request.user, is_learned=True
         ).select_related("word")
+
+        search = self.request.GET.get("q")
+
+        if search:
+            search_lower = search.lower()
+
+            qs = (
+                qs.annotate(
+                    priority=Case(
+                        When(word__name__istartswith=search_lower, then=Value(0)),
+                        When(word__name__icontains=search_lower, then=Value(1)),
+                        default=Value(2),
+                        output_field=IntegerField(),
+                    )
+                )
+                .filter(word__name__icontains=search_lower)
+                .order_by("priority", Lower("word__name"))
+            )
+        else:
+            qs = qs.order_by(Lower("word__name"))
+
+        return qs
+
+
+class UploadKnownWordsView(LoginRequiredMixin, View):
+
+    BATCH_SIZE = 1000
+
+    @transaction.atomic
+    def post(self, request):
+        file = request.FILES.get("file")
+
+        if not file:
+            messages.error(request, "Файл не выбран")
+            return redirect("study:known_words")
+
+        if file.size > 5 * 1024 * 1024:
+            messages.error(request, "Файл слишком большой")
+            return redirect("study:known_words")
+
+        try:
+            content = file.read().decode("utf-8")
+        except UnicodeDecodeError:
+            messages.error(request, "Файл должен быть UTF-8")
+            return redirect("study:known_words")
+
+        word_names = [w.strip() for w in content.splitlines() if w.strip()]
+
+        if not word_names:
+            messages.warning(request, "Файл пуст")
+            return redirect("study:known_words")
+
+        # Берём только существующие слова
+        word_ids = list(
+            Word.objects.filter(name__in=word_names).values_list("id", flat=True)
+        )
+
+        if not word_ids:
+            messages.warning(request, "Ни одно слово не найдено в словаре")
+            return redirect("study:known_words")
+
+        user = request.user
+
+        # =========================
+        # 1️⃣ BULK CREATE батчами
+        # =========================
+        for i in range(0, len(word_ids), self.BATCH_SIZE):
+
+            batch_ids = word_ids[i : i + self.BATCH_SIZE]
+
+            to_create = [
+                UserWordProgress(user=user, word_id=word_id) for word_id in batch_ids
+            ]
+
+            UserWordProgress.objects.bulk_create(
+                to_create, ignore_conflicts=True, batch_size=self.BATCH_SIZE
+            )
+
+        # =========================
+        # 2️⃣ BULK UPDATE батчами
+        # =========================
+        for i in range(0, len(word_ids), self.BATCH_SIZE):
+
+            batch_ids = word_ids[i : i + self.BATCH_SIZE]
+
+            UserWordProgress.objects.filter(user=user, word_id__in=batch_ids).update(
+                is_learned=True, is_learning=False
+            )
+
+        messages.success(request, f"Импортировано слов: {len(word_ids)}")
+
+        return redirect("study:known_words")
+
+
+class DownloadKnownWordsView(LoginRequiredMixin, View):
+
+    def get(self, request):
+        words = UserWordProgress.objects.filter(
+            user=request.user, is_learned=True
+        ).select_related("word")
+
+        content = "\n".join([w.word.name for w in words])
+
+        response = HttpResponse(content, content_type="text/plain")
+        response["Content-Disposition"] = 'attachment; filename="known_words.txt"'
+        return response
+
+
+class KnownWordsAjaxView(LoginRequiredMixin, View):
+
+    def get(self, request):
+
+        qs = UserWordProgress.objects.filter(
+            user=request.user, is_learned=True
+        ).select_related("word")
+
+        search = request.GET.get("q")
+
+        if search:
+            search_lower = search.lower()
+
+            qs = (
+                qs.annotate(
+                    priority=Case(
+                        When(word__name__istartswith=search_lower, then=Value(0)),
+                        When(word__name__icontains=search_lower, then=Value(1)),
+                        default=Value(2),
+                        output_field=IntegerField(),
+                    )
+                )
+                .filter(word__name__icontains=search_lower)
+                .order_by("priority", Lower("word__name"))
+            )
+        else:
+            qs = qs.order_by(Lower("word__name"))
+
+        paginator = Paginator(qs, 30)
+        page_number = request.GET.get("page", 1)
+        page_obj = paginator.get_page(page_number)
+
+        html = render_to_string(
+            "study/partials/known_words_list.html",
+            {"known_words": page_obj},
+            request=request,
+        )
+
+        return JsonResponse({"html": html, "has_next": page_obj.has_next()})
 
 
 class ToggleKnownWordView(LoginRequiredMixin, View):

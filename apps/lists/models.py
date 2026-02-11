@@ -79,6 +79,9 @@ class UserSubtitleList(models.Model):
     subtitle_list = models.ForeignKey(SubtitleList, on_delete=models.CASCADE)
 
     is_open_menu = models.BooleanField(default=False)
+    quantity_learned_words = models.PositiveIntegerField(
+        default=0, null=True, blank=True
+    )
 
     class Meta:
         db_table = "lists_userslists"

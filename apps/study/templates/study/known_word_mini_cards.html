@@ -3,63 +3,64 @@
 
 {% block content %}
 <div class="container mt-4">
+
     <h2 class="mb-4">Выученные слова</h2>
 
-    <div class="row g-3">
-        {% for item in known_words %}
-        <div class="col-6 col-md-4 col-lg-3">
-            <div class="card p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="word-name">{{ item.word.name }}</span>
+    <!-- SEARCH + BUTTONS -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
 
-                    <!-- Галочка -->
-                    <button class="btn btn-sm btn-outline-success known-toggle"
-                            data-word-id="{{ item.word.id }}">
-                        <i class="bi bi-check-lg"></i>
-                    </button>
-                </div>
+        <form method="get" class="d-flex" style="max-width:300px;">
+            <div class="input-group" style="max-width:300px;">
+                <input type="text"
+                       id="search-input"
+                       class="form-control"
+                       placeholder="Поиск...">
+                <button class="btn btn-outline-secondary">
+                    <i class="bi bi-search"></i>
+                </button>
             </div>
+
+        </form>
+
+        <div class="d-flex gap-2">
+
+            <a href="{% url 'study:download_known_words' %}"
+               class="btn btn-outline-primary">
+                Скачать
+            </a>
+
+            <form method="post"
+                  action="{% url 'study:upload_known_words' %}"
+                  enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file"
+                       name="file"
+                       accept=".txt"
+                       required
+                       class="form-control form-control-sm d-inline"
+                       style="width:160px;">
+                <button class="btn btn-outline-success btn-sm">
+                    Загрузить
+                </button>
+            </form>
+
         </div>
-        {% empty %}
-        <p class="text-muted">Список пуст</p>
-        {% endfor %}
     </div>
+
+    <!-- WORDS -->
+    <div class="row g-3"
+         id="word-container"
+         data-has-next="{{ page_obj.has_next|yesno:'true,false' }}">
+        {% include "study/partials/known_words_list.html" %}
+    </div>
+
+    <div id="loading" class="text-center my-3" style="display:none;">
+        Загрузка...
+    </div>
+
 </div>
-<script>
-document.querySelectorAll(".known-toggle").forEach(btn => {
-    btn.addEventListener("click", async () => {
-        const wordId = btn.dataset.wordId;
-        const csrftoken = getCookie("csrftoken");
+{% endblock %}
 
-        const res = await fetch("{% url 'study:toggle_known_word' %}", {
-            method: "POST",
-            headers: {
-                "X-CSRFToken": csrftoken
-            },
-            body: new FormData(Object.assign(new FormData(), { word_id: wordId }))
-        });
-
-        const data = await res.json();
-        if (data.status === "removed") {
-            btn.closest(".card").remove();
-        }
-    });
-});
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-</script>
-
+{% block extra_js %}
+<script src="{% static 'study/js/known_words.js' %}"></script>
 {% endblock %}

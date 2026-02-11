@@ -1,6 +1,17 @@
 import json
 
-from django.db.models import Exists, OuterRef, Case, When, Value, IntegerField, Prefetch
+from django.db.models import (
+    Exists,
+    OuterRef,
+    Case,
+    When,
+    Value,
+    IntegerField,
+    Prefetch,
+    Subquery,
+    ExpressionWrapper,
+    F,
+)
 from django.contrib.auth.decorators import login_required
 from django.db import models
 from django.db.models.signals import pre_save, post_delete
@@ -131,18 +142,30 @@ def my_lists(request):
     )
 
     if request.user.is_authenticated:
+        user_list_qs = UserSubtitleList.objects.filter(
+            user=request.user,
+            subtitle_list=OuterRef("pk"),
+        )
+
         qs = qs.annotate(
             is_liked=Exists(
                 SubtitleListLike.objects.filter(
-                    subtitle_list=OuterRef("pk"), user=request.user
+                    subtitle_list=OuterRef("pk"),
+                    user=request.user,
                 )
-            )
+            ),
+            user_quantity_learned_words=Subquery(
+                user_list_qs.values("quantity_learned_words")[:1],
+                output_field=IntegerField(),
+            ),
+            is_open_menu=Subquery(
+                user_list_qs.values("is_open_menu")[:1],
+            ),
+            progress_percent=ExpressionWrapper(
+                100 * F("user_quantity_learned_words") / F("quantity_words"),
+                output_field=IntegerField(),
+            ),
         )
-        user_states = UserSubtitleList.objects.filter(user=request.user)
-        qs = qs.prefetch_related(Prefetch("usersubtitlelist_set", queryset=user_states))
-        for lst in qs:
-            user_state = lst.usersubtitlelist_set.first()
-            lst.is_open_menu = user_state.is_open_menu if user_state else False
 
     return render(
         request,
