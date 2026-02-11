@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем весь проект
 COPY . .
+RUN python -m spacy download en_core_web_sm
 
 # Скачиваем NLTK ресурсы
 RUN python -m nltk.downloader -d /usr/share/nltk_data \

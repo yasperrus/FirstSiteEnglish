@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     "apps.dictionary",
     "apps.study",
     "apps.social",
-    "apps.ingestion",
+    "apps.ingestion.apps.IngestionConfig",
     "apps.video",
 ]
 
@@ -152,3 +152,5 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
+SPACY_MODEL = "en_core_web_sm"
