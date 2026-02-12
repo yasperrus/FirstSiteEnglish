@@ -1,29 +1,35 @@
+/* ===========================
+   Общие стили
+=========================== */
+
 /* Контейнер */
-.container {
+.container, .container-fluid {
     max-width: 100%;
 }
 
-/* Слова сверху */
-.list-card .card-body > .text-center:first-child {
-    position: absolute;
-    top: 0px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.85rem;
+/* Тело документа */
+body {
+    overflow-x: hidden;
 }
 
-/* Карточка */
+/* ===========================
+   Карточка списка
+=========================== */
 .list-card {
     width: 100%;
     display: flex;
     flex-direction: column;
+    position: relative; /* overlay */
+    min-height: 260px;
+    overflow: hidden;
+    border-radius: 0.5rem;
 }
 
 .list-card .card-body {
     display: flex;
     flex-direction: column;
-    height: 100%;        /* для margin-top: auto */
-    flex: 1 1 auto;      /* растягиваем содержимое */
+    height: 100%;
+    flex: 1 1 auto;
     padding-bottom: 0;
 }
 
@@ -37,13 +43,34 @@
     border-bottom-right-radius: 0 !important;
 }
 
-/* Наведение */
+/* Наведение на overlay */
 .list-card:hover .card-overlay {
     --bs-bg-opacity: 0.75;
 }
 
-/* Кнопки */
-.toggle-btn i { color: #111; }
+/* ===========================
+   Верхний счетчик слов
+=========================== */
+.list-card .card-body > .text-center:first-child {
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+/* ===========================
+   Заголовок
+=========================== */
+.card-title {
+    margin-bottom: 0.25rem;
+    word-break: break-word;
+}
+
+/* ===========================
+   Кнопки
+=========================== */
+.toggle-btn i {
+    color: #111;
+}
+
 .icon-btn {
     width: 32px;
     height: 32px;
@@ -52,35 +79,33 @@
     align-items: center;
     justify-content: center;
 }
+
 .test-btn img {
     width: 24px;
     height: 24px;
 }
 
-/* Publish */
+/* ===========================
+   Publish / Like
+=========================== */
 .publish-switch:checked {
     background-color: #28a745;
     border-color: #28a745;
 }
+
 .publish-switch:checked:focus {
     box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
-}
-
-.list-card .card-body {
-    display: flex;
-    flex-direction: column;
-    height: 100%;      /* чтобы margin-top: auto работал */
-    padding-bottom: 0; /* убираем лишние отступы снизу */
 }
 
 .publish-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-shrink: 0;    /* не сжимается */
-    margin-top: auto;  /* прижимает к низу */
+    flex-shrink: 0;
+    margin-top: auto;
     width: 100%;
-    padding: 0;        /* минимальные отступы */
+    padding: 0;
+    gap: 6px;
 }
 
 .publish-center {
@@ -97,12 +122,12 @@
 }
 
 .publish-right .card-overlay {
-    padding: 0.15rem 0.22rem; /* уменьшаем внутренние отступы */
-    min-width: auto;          /* чтобы не растягивалось */
+    padding: 0.15rem 0.22rem;
+    min-width: auto;
 }
 
 .publish-right .like-btn {
-    width: 22px;   /* уменьшить кнопку */
+    width: 22px;
     height: 22px;
     padding: 0;
     display: flex;
@@ -110,8 +135,9 @@
     justify-content: center;
 }
 
-
-/* Прогресс */
+/* ===========================
+   Прогресс
+=========================== */
 .progress-ring-wrapper {
     --size: 40px;
     --thickness: 6px;
@@ -135,7 +161,9 @@
     mask: radial-gradient(circle, transparent 52%, #000 calc(52% + 1px));
 }
 
-.progress-ring.empty { background: var(--track-color); }
+.progress-ring.empty {
+    background: var(--track-color);
+}
 
 .progress-ring-label {
     position: absolute;
@@ -147,4 +175,68 @@
     font-weight: 600;
     color: #495057;
     pointer-events: none;
+}
+
+/* ===========================
+   Тесты
+=========================== */
+.tests-section {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+/* ===========================
+   Media Queries (мобильные устройства)
+=========================== */
+@media (max-width: 576px) {
+
+    /* Заголовок */
+    .card-title {
+        font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    }
+
+    /* Верхний счетчик */
+    .list-card .card-body > .text-center:first-child {
+        font-size: 0.75rem;
+    }
+
+    /* Publish-row вертикально */
+    .publish-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .publish-center,
+    .publish-right {
+        justify-content: center;
+    }
+
+    /* Кнопки тестов */
+    .test-btn img {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Иконки */
+    .icon-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .publish-right .like-btn {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+/* ===========================
+   Адаптивность сетки
+=========================== */
+@media (max-width: 768px) {
+    .card-title {
+        font-size: clamp(0.85rem, 2.2vw, 1rem);
+    }
 }
